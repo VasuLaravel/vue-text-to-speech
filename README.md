@@ -2,6 +2,8 @@
 
 ## Project setup
 ```
+# Clone the project
+cd text_to_speatch
 npm install
 ```
 
