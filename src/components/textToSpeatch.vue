@@ -1,6 +1,7 @@
 <template>
   <div class="textToSpeatch">
     <div class="row">
+      <p>Enter some text in the input below and press the button to hear it. </br> change voice using the below controls.</p>
       <div class="left">
         <textarea v-model="userInput"></textarea>
         <small class="error-text" v-if="validation">
@@ -90,8 +91,7 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 .row {
-  width: 80%;
-  margin: 0 10%;
+  width: 100%;
   display: block;
 }
 .row .left {
@@ -104,7 +104,7 @@ export default {
 }
 
 textarea {
-  width: 60%;
+  width: 65%;
   height: 150px;
   border-radius: 10px;
   border: 2px solid;
