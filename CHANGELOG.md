@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ---
 
+## [2.0.1] — 2026-07-25
+
+### Fixed
+- Provider test mocks updated to avoid jsdom `Blob.stream()` incompatibility with Node.js 22
+- Added missing `README.md` to published package
+- Fixed GitHub Actions pnpm version conflict and Node.js version requirement
+
+
 ## [2.0.0] — 2026-07-25
 
 ### Breaking Changes
