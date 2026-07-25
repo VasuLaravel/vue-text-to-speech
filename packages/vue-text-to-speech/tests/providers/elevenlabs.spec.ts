@@ -1,14 +1,27 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ElevenLabsProvider } from '../../src/providers/ElevenLabsProvider.js'
 
-function mockFetchOk(body: BodyInit = new Blob(['audio'], { type: 'audio/mpeg' })) {
-  return vi.fn().mockResolvedValue(
-    new Response(body, { status: 200, headers: { 'Content-Type': 'audio/mpeg' } }),
-  )
+function mockFetchOk() {
+  const blob = new Blob(['audio'], { type: 'audio/mpeg' })
+  return vi.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    headers: new Headers({ 'Content-Type': 'audio/mpeg' }),
+    blob: () => Promise.resolve(blob),
+    text: () => Promise.resolve(''),
+  } as unknown as Response)
 }
 
 function mockFetchError(status: number, body = 'error') {
-  return vi.fn().mockResolvedValue(new Response(body, { status }))
+  return vi.fn().mockResolvedValue({
+    ok: false,
+    status,
+    statusText: 'Error',
+    headers: new Headers(),
+    blob: () => Promise.resolve(new Blob([body])),
+    text: () => Promise.resolve(body),
+  } as unknown as Response)
 }
 
 function stubAudio() {
