@@ -1,0 +1,8 @@
+{
+  "buildCommand": "pnpm --filter docs docs:build",
+  "outputDirectory": "apps/docs/docs/.vitepress/dist",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

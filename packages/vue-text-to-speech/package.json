@@ -1,0 +1,108 @@
+{
+  "name": "vue-text-to-speech",
+  "version": "2.0.0",
+  "description": "Vue 3 text-to-speech plugin with composables, UI components, and multi-provider support",
+  "license": "MIT",
+  "author": "kunchamvasu",
+  "homepage": "https://vue-text-to-speech-docs.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VasuLaravel/vue-text-to-speech.git"
+  },
+  "bugs": {
+    "url": "https://github.com/VasuLaravel/vue-text-to-speech/issues"
+  },
+  "keywords": [
+    "vue",
+    "vue3",
+    "text-to-speech",
+    "tts",
+    "speech-to-text",
+    "stt",
+    "speech-recognition",
+    "web-speech-api",
+    "openai",
+    "elevenlabs",
+    "azure",
+    "composable",
+    "streaming",
+    "voice",
+    "accessibility"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./providers/openai": {
+      "import": {
+        "types": "./dist/providers/openai.d.ts",
+        "default": "./dist/providers/openai.js"
+      },
+      "require": {
+        "types": "./dist/providers/openai.d.cts",
+        "default": "./dist/providers/openai.cjs"
+      }
+    },
+    "./providers/elevenlabs": {
+      "import": {
+        "types": "./dist/providers/elevenlabs.d.ts",
+        "default": "./dist/providers/elevenlabs.js"
+      },
+      "require": {
+        "types": "./dist/providers/elevenlabs.d.cts",
+        "default": "./dist/providers/elevenlabs.cjs"
+      }
+    },
+    "./providers/azure": {
+      "import": {
+        "types": "./dist/providers/azure.d.ts",
+        "default": "./dist/providers/azure.js"
+      },
+      "require": {
+        "types": "./dist/providers/azure.d.cts",
+        "default": "./dist/providers/azure.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "vite build && vue-tsc --declaration --emitDeclarationOnly && node scripts/copy-dts.mjs",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --ext .ts,.vue",
+    "prepublishOnly": "pnpm build && pnpm test"
+  },
+  "peerDependencies": {
+    "vue": "^3.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "@vue/test-utils": "^2.4.0",
+    "jsdom": "^29.1.1",
+    "vite": "^6.0.0",
+    "vite-plugin-dts": "^4.0.0",
+    "vitest": "^2.0.0",
+    "vue": "^3.5.0",
+    "vue-tsc": "^2.0.0"
+  }
+}
