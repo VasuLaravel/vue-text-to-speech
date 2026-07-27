@@ -2,8 +2,8 @@
 
 [![npm version](https://img.shields.io/npm/v/vue-text-to-speech?color=6366f1)](https://www.npmjs.com/package/vue-text-to-speech)
 [![npm downloads](https://img.shields.io/npm/dm/vue-text-to-speech)](https://www.npmjs.com/package/vue-text-to-speech)
-[![CI](https://github.com/VasuLaravel/vue-text-to-speech/actions/workflows/ci.yml/badge.svg)](https://github.com/VasuLaravel/vue-text-to-speech/actions/workflows/ci.yml)
-[![license](https://img.shields.io/npm/l/vue-text-to-speech)](https://github.com/VasuLaravel/vue-text-to-speech/blob/main/LICENSE)
+[![CI](https://github.com/VasuLaravel/vue-text-to-speech/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/VasuLaravel/vue-text-to-speech/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/vue-text-to-speech)](https://github.com/VasuLaravel/vue-text-to-speech/blob/master/LICENSE)
 
 Vue 3 text-to-speech plugin with composables, drop-in components and multi-provider support — **Web Speech API, OpenAI, ElevenLabs and Azure Cognitive Services**, all behind one unified interface.
 
