@@ -22,7 +22,7 @@ const azureVoice = ref('en-US-JennyNeural')
 
 // Restore saved config from localStorage
 try {
-  const saved = localStorage.getItem('vts-provider-config')
+  const saved = sessionStorage.getItem('vts-provider-config')
   if (saved) {
     const p = JSON.parse(saved) as Record<string, string>
     providerTab.value = p.provider ?? 'web'
@@ -66,12 +66,12 @@ const codeSnippet = computed(() => {
 })
 
 function applyProvider() {
-  try { localStorage.setItem('vts-provider-config', JSON.stringify(buildProviderConfig())) } catch { /* ignore */ }
+  try { sessionStorage.setItem('vts-provider-config', JSON.stringify(buildProviderConfig())) } catch { /* ignore */ }
   window.location.reload()
 }
 
 function resetProvider() {
-  try { localStorage.removeItem('vts-provider-config') } catch { /* ignore */ }
+  try { sessionStorage.removeItem('vts-provider-config') } catch { /* ignore */ }
   providerTab.value = 'web'
   window.location.reload()
 }

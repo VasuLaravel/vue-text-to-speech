@@ -26,6 +26,9 @@ export class AzureProvider implements TTSProvider {
   private _errorCbs: Array<(err: SpeechError) => void> = []
 
   constructor(config: AzureConfig) {
+    if (config.baseURL && !/^https:\/\//i.test(config.baseURL)) {
+      throw new Error('[vue-text-to-speech] Azure baseURL must use HTTPS')
+    }
     this._config = config
   }
 
@@ -34,6 +37,17 @@ export class AzureProvider implements TTSProvider {
   onError(cb: (err: SpeechError) => void): void { this._errorCbs.push(cb) }
 
   async speak(options: SpeakOptions): Promise<void> {
+    if (!options.text) {
+      const err: SpeechError = { code: 'API_ERROR', message: 'Text must not be empty' }
+      this._errorCbs.forEach((cb) => cb(err))
+      throw err
+    }
+    if (options.text.length > 10_000) {
+      const err: SpeechError = { code: 'API_ERROR', message: 'Text exceeds maximum length of 10,000 characters' }
+      this._errorCbs.forEach((cb) => cb(err))
+      throw err
+    }
+
     this.stop()
 
     const controller = new AbortController()

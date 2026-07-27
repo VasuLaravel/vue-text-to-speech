@@ -73,7 +73,8 @@ export async function throwIfNotOk(response: Response): Promise<void> {
 
   const err: SpeechError = {
     code,
-    message: `HTTP ${response.status} ${response.statusText}${body ? `: ${body.slice(0, 200)}` : ''}`,
+    message: `HTTP ${response.status} ${response.statusText}`,
+    cause: body || undefined,
   }
   throw err
 }
