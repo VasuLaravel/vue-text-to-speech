@@ -2,9 +2,12 @@ import { createApp } from 'vue'
 import { Quasar } from 'quasar'
 import 'quasar/dist/quasar.css'
 import '@quasar/extras/material-icons/material-icons.css'
+import { inject as injectAnalytics } from '@vercel/analytics'
 import { VueSpeech } from 'vue-text-to-speech'
 import type { ProviderConfig } from 'vue-text-to-speech'
 import App from './App.vue'
+
+injectAnalytics()
 
 function getProviderConfig(): ProviderConfig {
   try {
