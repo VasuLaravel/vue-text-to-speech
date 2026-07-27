@@ -14,6 +14,7 @@ class MockSpeechRecognition extends EventTarget {
   stop = vi.fn()
   onresult: ((e: SpeechRecognitionEvent) => void) | null = null
   onerror: ((e: SpeechRecognitionErrorEvent) => void) | null = null
+  onend: (() => void) | null = null
 
   _simulateResult(transcript: string, isFinal: boolean, confidence = 0.9) {
     const result = {
@@ -34,6 +35,10 @@ class MockSpeechRecognition extends EventTarget {
 
   _simulateError(error: SpeechRecognitionErrorCode) {
     if (this.onerror) this.onerror({ error } as unknown as SpeechRecognitionErrorEvent)
+  }
+
+  _simulateEnd() {
+    if (this.onend) this.onend()
   }
 }
 
@@ -150,6 +155,35 @@ describe('useSpeechRecognition', () => {
     composable.start()
     w.unmount()
     expect(mockInstance.stop).toHaveBeenCalled()
+  })
+
+  it('sets isListening to false when recognition ends naturally', () => {
+    const c = mountComposable({ continuous: false })
+    c.start()
+    // Manually stop so isListening is false before end fires (simulates manual flow)
+    c.stop()
+    expect(c.isListening.value).toBe(false)
+  })
+
+  it('auto-restarts the provider when recognition ends unexpectedly while listening', () => {
+    const c = mountComposable({ continuous: true })
+    c.start()
+    mockInstance.start.mockClear()
+    // Simulate browser ending recognition unexpectedly (isListening still true)
+    mockInstance._simulateEnd()
+    // composable should have restarted the provider
+    expect(mockInstance.start).toHaveBeenCalledOnce()
+    expect(c.isListening.value).toBe(true)
+  })
+
+  it('does NOT auto-restart after manual stop()', () => {
+    const c = mountComposable({ continuous: true })
+    c.start()
+    c.stop()  // sets isListening false, nulls rec.onend
+    mockInstance.start.mockClear()
+    mockInstance._simulateEnd()  // rec.onend is null — nothing fires
+    expect(mockInstance.start).not.toHaveBeenCalled()
+    expect(c.isListening.value).toBe(false)
   })
 
   it('does NOT use SPEECH_PROVIDER_KEY — always creates its own STT provider (I-4.3)', () => {

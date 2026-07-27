@@ -43,7 +43,7 @@ function onFinal(text: string, confidence: number) {
 interface UseSpeechRecognitionOptions {
   /** BCP-47 language tag, e.g. 'en-US'. Defaults to browser language. */
   lang?: string
-  /** Keep recording after each final result. Default: false */
+  /** Keep recording after each final result. Default: true */
   continuous?: boolean
 }
 
@@ -91,6 +91,25 @@ useSpeechRecognition({
   onError(err: SpeechError) { /* ... */ },
 })
 ```
+
+## Smooth / Continuous Recording
+
+`continuous` defaults to `true`, so recognition keeps running across natural speech pauses without stopping. If the browser unexpectedly ends the session (network hiccup, tab backgrounding), the composable automatically restarts it as long as `isListening` is `true`.
+
+To stop recording, always call `stop()` — this sets `isListening` to `false` before tearing down the session, which prevents the auto-restart guard from triggering.
+
+## Live Word-by-Word Display
+
+Use `transcript` (interim) for real-time feedback and `finalTranscript` for committed text:
+
+```vue
+<template>
+  <!-- finalTranscript holds committed phrases; transcript shows live in-progress words -->
+  <p>{{ finalTranscript }}<em class="live">{{ transcript }}</em></p>
+</template>
+```
+
+`transcript` resets to `''` each time a final result is committed, so concatenating both gives a seamless stream.
 
 ## Transcript Lifecycle
 

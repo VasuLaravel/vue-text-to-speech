@@ -91,6 +91,9 @@ export interface STTProvider {
   /** Called when the recogniser commits a final result */
   onFinalTranscript(cb: (transcript: string, confidence: number) => void): void
 
+  /** Called when recognition ends naturally (not via a manual stop() call) */
+  onEnd(cb: () => void): void
+
   /** Called when a recognition error occurs */
   onError(cb: (err: SpeechError) => void): void
 }

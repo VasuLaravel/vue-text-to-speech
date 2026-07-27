@@ -14,6 +14,7 @@ class MockSpeechRecognition extends EventTarget {
 
   onresult: ((e: SpeechRecognitionEvent) => void) | null = null
   onerror: ((e: SpeechRecognitionErrorEvent) => void) | null = null
+  onend: (() => void) | null = null
 
   /** Test helper — simulate a recognition result */
   _simulateResult(transcript: string, isFinal: boolean, confidence = 0.9) {
@@ -48,6 +49,11 @@ class MockSpeechRecognition extends EventTarget {
   _simulateError(error: SpeechRecognitionErrorCode) {
     const event = { error } as unknown as SpeechRecognitionErrorEvent
     if (this.onerror) this.onerror(event)
+  }
+
+  /** Test helper — simulate the browser firing the end event */
+  _simulateEnd() {
+    if (this.onend) this.onend()
   }
 }
 
@@ -167,5 +173,31 @@ describe('WebSpeechSTTProvider', () => {
     expect(errorCb).toHaveBeenCalledWith(
       expect.objectContaining({ code: 'NOT_SUPPORTED' }),
     )
+  })
+
+  it('fires onEnd callback when recognition ends naturally', () => {
+    const provider = new WebSpeechSTTProvider()
+    const endCb = vi.fn()
+    provider.onEnd(endCb)
+    provider.start()
+    mockRecognitionInstance._simulateEnd()
+    expect(endCb).toHaveBeenCalledOnce()
+  })
+
+  it('does NOT fire onEnd after a manual stop()', () => {
+    const provider = new WebSpeechSTTProvider()
+    const endCb = vi.fn()
+    provider.onEnd(endCb)
+    provider.start()
+    provider.stop()  // nulls rec.onend via _teardown()
+    mockRecognitionInstance._simulateEnd()
+    expect(endCb).not.toHaveBeenCalled()
+  })
+
+  it('defaults continuous to true', () => {
+    const provider = new WebSpeechSTTProvider()
+    expect(provider.continuous).toBe(true)
+    provider.start()
+    expect(mockRecognitionInstance.continuous).toBe(true)
   })
 })

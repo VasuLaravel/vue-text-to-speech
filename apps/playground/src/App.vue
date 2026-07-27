@@ -106,7 +106,7 @@ const {
   start: startListening,
   stop: stopListening,
   resetTranscript,
-} = useSpeechRecognition({ interimResults: true })
+} = useSpeechRecognition({ continuous: true, interimResults: true })
 </script>
 
 <template>

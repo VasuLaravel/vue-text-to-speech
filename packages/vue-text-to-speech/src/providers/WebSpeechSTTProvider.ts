@@ -63,7 +63,7 @@ export interface WebSpeechSTTOptions {
   lang?: string
   /** Whether to return interim (non-final) results. Default: true */
   interimResults?: boolean
-  /** Whether recognition continues after the first final result. Default: false */
+  /** Whether recognition continues after the first final result. Default: true */
   continuous?: boolean
   /** Maximum number of alternative transcripts per result. Default: 1 */
   maxAlternatives?: number
@@ -78,13 +78,14 @@ export class WebSpeechSTTProvider implements STTProvider {
 
   private _transcriptCbs: Array<(transcript: string, confidence: number) => void> = []
   private _finalCbs: Array<(transcript: string, confidence: number) => void> = []
+  private _endCbs: Array<() => void> = []
   private _errorCbs: Array<(err: SpeechError) => void> = []
 
   constructor(options: WebSpeechSTTOptions = {}) {
     this._options = {
       lang: options.lang ?? '',
       interimResults: options.interimResults ?? true,
-      continuous: options.continuous ?? false,
+      continuous: options.continuous ?? true,
       maxAlternatives: options.maxAlternatives ?? 1,
     }
     this.continuous = this._options.continuous
@@ -101,6 +102,10 @@ export class WebSpeechSTTProvider implements STTProvider {
 
   onFinalTranscript(cb: (transcript: string, confidence: number) => void): void {
     this._finalCbs.push(cb)
+  }
+
+  onEnd(cb: () => void): void {
+    this._endCbs.push(cb)
   }
 
   onError(cb: (err: SpeechError) => void): void {
@@ -153,6 +158,10 @@ export class WebSpeechSTTProvider implements STTProvider {
       })
     }
 
+    rec.onend = () => {
+      this._endCbs.forEach((cb) => cb())
+    }
+
     this._recognition = rec
     rec.start()
   }
@@ -170,6 +179,7 @@ export class WebSpeechSTTProvider implements STTProvider {
     if (this._recognition) {
       this._recognition.onresult = null
       this._recognition.onerror = null
+      this._recognition.onend = null
       this._recognition = null
     }
   }

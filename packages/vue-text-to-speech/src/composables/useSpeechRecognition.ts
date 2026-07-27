@@ -71,6 +71,15 @@ export function useSpeechRecognition(
     isListening.value = false
   })
 
+  // When recognition ends unexpectedly (not via stop()), auto-restart if the
+  // user is still supposed to be listening. This prevents silent gaps caused
+  // by browser-side timeouts or network hiccups during a continuous session.
+  provider.onEnd(() => {
+    if (isListening.value) {
+      provider.start()
+    }
+  })
+
   // ── Public API ───────────────────────────────────────────────────────────────
   function start(): void {
     error.value = null
@@ -80,8 +89,8 @@ export function useSpeechRecognition(
   }
 
   function stop(): void {
+    isListening.value = false  // set before provider.stop() so onEnd guard sees false
     provider.stop()
-    isListening.value = false
   }
 
   function resetTranscript(): void {
@@ -92,8 +101,8 @@ export function useSpeechRecognition(
 
   // ── Cleanup on component unmount (4.5) ──────────────────────────────────────
   onUnmounted(() => {
+    isListening.value = false  // prevent auto-restart before provider.stop()
     provider.stop()
-    isListening.value = false
   })
 
   return {
