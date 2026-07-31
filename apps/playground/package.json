@@ -10,6 +10,8 @@
   "dependencies": {
     "@quasar/extras": "^2.0.2",
     "@vercel/analytics": "^2.0.1",
+    "@vueuse/core": "^11.0.0",
+    "gsap": "^3.12.5",
     "quasar": "^2.21.5",
     "vue": "^3.5.0",
     "vue-text-to-speech": "workspace:*"

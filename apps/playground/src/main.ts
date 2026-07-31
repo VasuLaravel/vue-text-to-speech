@@ -1,5 +1,7 @@
-import { createApp } from 'vue'
+﻿import { createApp } from 'vue'
 import { Quasar } from 'quasar'
+// theme.css must be imported before Quasar so --pg-* vars take precedence
+import './styles/theme.css'
 import 'quasar/dist/quasar.css'
 import '@quasar/extras/material-icons/material-icons.css'
 import { inject as injectAnalytics } from '@vercel/analytics'
@@ -11,7 +13,7 @@ injectAnalytics()
 
 function getProviderConfig(): ProviderConfig {
   try {
-    const stored = localStorage.getItem('vts-provider-config')
+    const stored = sessionStorage.getItem('vts-provider-config')
     if (stored) return JSON.parse(stored) as ProviderConfig
   } catch { /* ignore */ }
   return { provider: 'web' }

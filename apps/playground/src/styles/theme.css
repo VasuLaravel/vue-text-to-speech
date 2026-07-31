@@ -1,0 +1,199 @@
+/* ─── Voice Agent Studio — Design Token System ────────────────────────────────
+ * Applied to :root[data-theme="dark"] and :root[data-theme="light"]
+ * Written to document.documentElement.dataset.theme by useTheme.ts
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Dark Mode ────────────────────────────────────────────────────────────── */
+:root[data-theme="dark"] {
+  --pg-bg:           #0a0a0f;
+  --pg-surface:      #12121a;
+  --pg-surface-2:    #1a1a26;
+  --pg-border:       rgba(255, 255, 255, 0.08);
+  --pg-primary:      #6366f1;
+  --pg-primary-dim:  rgba(99, 102, 241, 0.15);
+  --pg-cyan:         #06b6d4;
+  --pg-cyan-dim:     rgba(6, 182, 212, 0.15);
+  --pg-rose:         #f43f5e;
+  --pg-rose-dim:     rgba(244, 63, 94, 0.15);
+  --pg-amber:        #f59e0b;
+  --pg-green:        #22c55e;
+  --pg-emerald:      #10b981;
+  --pg-purple:       #a855f7;
+  --pg-text:         #e2e8f0;
+  --pg-text-muted:   #64748b;
+  --pg-radius:       12px;
+  --pg-radius-sm:    8px;
+  --pg-shadow:       0 4px 24px rgba(0, 0, 0, 0.4);
+  --pg-shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.3);
+  --pg-glow-primary: 0 0 0 2px rgba(99, 102, 241, 0.4);
+  --pg-glow-cyan:    0 0 0 2px rgba(6, 182, 212, 0.4);
+  --pg-glow-rose:    0 0 0 2px rgba(244, 63, 94, 0.4);
+}
+
+/* ── Light Mode ───────────────────────────────────────────────────────────── */
+:root[data-theme="light"] {
+  --pg-bg:           #f8fafc;
+  --pg-surface:      #ffffff;
+  --pg-surface-2:    #f1f5f9;
+  --pg-border:       #e2e8f0;
+  --pg-primary:      #6366f1;
+  --pg-primary-dim:  rgba(99, 102, 241, 0.10);
+  --pg-cyan:         #06b6d4;
+  --pg-cyan-dim:     rgba(6, 182, 212, 0.10);
+  --pg-rose:         #f43f5e;
+  --pg-rose-dim:     rgba(244, 63, 94, 0.10);
+  --pg-amber:        #d97706;
+  --pg-green:        #16a34a;
+  --pg-emerald:      #059669;
+  --pg-purple:       #9333ea;
+  --pg-text:         #0f172a;
+  --pg-text-muted:   #64748b;
+  --pg-radius:       12px;
+  --pg-radius-sm:    8px;
+  --pg-shadow:       0 4px 24px rgba(0, 0, 0, 0.08);
+  --pg-shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.06);
+  --pg-glow-primary: 0 0 0 2px rgba(99, 102, 241, 0.3);
+  --pg-glow-cyan:    0 0 0 2px rgba(6, 182, 212, 0.3);
+  --pg-glow-rose:    0 0 0 2px rgba(244, 63, 94, 0.3);
+}
+
+/* ── Base page reset — applies after theme tokens are set ─────────────────── */
+body {
+  background-color: var(--pg-bg);
+  color: var(--pg-text);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ── Shared utility classes ───────────────────────────────────────────────── */
+.pg-card {
+  background: var(--pg-surface);
+  border: 1px solid var(--pg-border);
+  border-radius: var(--pg-radius);
+  box-shadow: var(--pg-shadow-sm);
+}
+
+.pg-card-nested {
+  background: var(--pg-surface-2);
+  border: 1px solid var(--pg-border);
+  border-radius: var(--pg-radius-sm);
+}
+
+.pg-text-muted {
+  color: var(--pg-text-muted);
+}
+
+.pg-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pg-text-muted);
+}
+
+/* ── Status badge colors ──────────────────────────────────────────────────── */
+.pg-badge-queued {
+  border: 1px solid var(--pg-primary);
+  color: var(--pg-primary);
+  background: var(--pg-primary-dim);
+}
+
+.pg-badge-speaking {
+  background: var(--pg-cyan);
+  color: #fff;
+}
+
+.pg-badge-done {
+  background: var(--pg-green);
+  color: #fff;
+}
+
+/* ── Scrollbar hiding (for horizontal tab bar on mobile) ──────────────────── */
+.pg-scroll-x {
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.pg-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Active-provider glow on cards ───────────────────────────────────────── */
+.pg-card-active {
+  box-shadow: var(--pg-glow-primary), var(--pg-shadow-sm);
+}
+
+/* ── Mic pulse animation (3 rings) ───────────────────────────────────────── */
+@keyframes pg-pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(1.8); opacity: 0;   }
+}
+
+.pg-pulse-ring {
+  animation: pg-pulse-ring 1.4s ease-out infinite;
+}
+.pg-pulse-ring:nth-child(2) { animation-delay: 0.3s; }
+.pg-pulse-ring:nth-child(3) { animation-delay: 0.6s; }
+
+/* ── Breathing (idle waveform) animation ─────────────────────────────────── */
+@keyframes pg-breathe {
+  0%, 100% { transform: scaleY(0.4); opacity: 0.5; }
+  50%       { transform: scaleY(1.0); opacity: 1;   }
+}
+
+/* ── Mic shake animation (error state) ───────────────────────────────────── */
+@keyframes pg-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+
+.pg-shake {
+  animation: pg-shake 0.5s ease;
+}
+
+/* ── Sentence boundary flash (cyan, 300ms) ───────────────────────────────── */
+@keyframes pg-flash-cyan {
+  0%   { background-color: var(--pg-cyan-dim); }
+  100% { background-color: transparent; }
+}
+
+.pg-flash-cyan {
+  animation: pg-flash-cyan 0.3s ease forwards;
+}
+
+/* ── Tab panel fade transition ───────────────────────────────────────────── */
+.pg-fade-enter-active,
+.pg-fade-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.pg-fade-enter-from,
+.pg-fade-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+/* ── Section utility (for GSAP useTabEntrance target) ────────────────────── */
+.pg-section {
+  /* Semantic wrapper that useTabEntrance animates; no additional styling */
+}
+
+/* ── Responsive: main content padding shrinks on small screens ────────────── */
+@media (max-width: 600px) {
+  .pg-main { padding: 16px 12px !important; }
+}
+
+/* ── Speaking dot badge ───────────────────────────────────────────────────── */
+@keyframes pg-speaking-dot {
+  0%, 100% { opacity: 1;   transform: scale(1);   }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+.pg-speaking-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pg-cyan);
+  animation: pg-speaking-dot 1s ease-in-out infinite;
+}
