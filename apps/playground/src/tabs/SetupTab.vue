@@ -1,7 +1,7 @@
 ﻿<script setup lang="ts">
 import { ref, computed } from 'vue'
 import CodeBlock from '../components/CodeBlock.vue'
-import { useSpeechSynthesis } from 'vue-text-to-speech'
+import { useBestWebVoice } from '../composables/useBestWebVoice'
 import { useToast } from '../composables/useToast'
 import { useTabEntrance } from '../composables/useTabEntrance'
 
@@ -33,8 +33,8 @@ const activeProvider = ref<ProviderId>((savedCfg.provider as ProviderId | undefi
 // ── Field values ───────────────────────────────────────────────────────────────
 // OpenAI
 const oaiKey    = ref('')
-const oaiModel  = ref('tts-1')
-const oaiVoice  = ref('alloy')
+const oaiModel  = ref('tts-1-hd')
+const oaiVoice  = ref('coral')
 const oaiBase   = ref('')
 const showOaiKey = ref(false)
 
@@ -48,12 +48,12 @@ const showElKey  = ref(false)
 // Azure
 const azKey    = ref('')
 const azRegion = ref('eastus')
-const azVoice  = ref('en-US-JennyNeural')
+const azVoice  = ref('en-US-Ava:DragonHDLatestNeural')
 const azBase   = ref('')
 const showAzKey = ref(false)
 
 // ── Test connection (uses Web Speech as fallback for non-API providers) ─────────
-const { speak: wsTTS, isSupported: wsSupported } = useSpeechSynthesis()
+const { speak: wsTTS, isSupported: wsSupported } = useBestWebVoice()
 
 async function testProvider(id: ProviderId) {
   const s = providerStates.value[id]

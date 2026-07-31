@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import { ref, computed, nextTick, onUnmounted } from 'vue'
 import { useStreamingTTS } from 'vue-text-to-speech'
+import { useVoiceInjectedProvider } from '../composables/useBestWebVoice'
 import WaveformCanvas from '../components/WaveformCanvas.vue'
 import CodeBlock from '../components/CodeBlock.vue'
 import { useSimulatedLLM } from '../composables/useSimulatedLLM'
@@ -27,7 +28,8 @@ const personaIdx = ref(0)
 const currentPersona = computed(() => PERSONAS[personaIdx.value])
 
 // ── Streaming TTS ──────────────────────────────────────────────────────────────
-const { pipeStream, currentItem, isStreaming, stop: stopTTS } = useStreamingTTS()
+const provider = useVoiceInjectedProvider()
+const { pipeStream, currentItem, isStreaming, stop: stopTTS } = useStreamingTTS({ provider })
 const isSpeaking = computed(() => isStreaming.value ?? false)
 const { waveformData } = useFakeWaveform(isSpeaking)
 useTabEntrance()

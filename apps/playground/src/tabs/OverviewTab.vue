@@ -1,14 +1,14 @@
 ﻿<script setup lang="ts">
 import { ref, onUnmounted } from 'vue'
-import { useSpeechSynthesis } from 'vue-text-to-speech'
 import WaveformCanvas from '../components/WaveformCanvas.vue'
 import { useFakeWaveform } from '../composables/useFakeWaveform'
 import { useTabEntrance } from '../composables/useTabEntrance'
+import { useBestWebVoice } from '../composables/useBestWebVoice'
 
 const emit = defineEmits<{ (e: 'navigate-to-tab', tab: string): void }>()
 
 // ── TTS ───────────────────────────────────────────────────────────────────────
-const { isSpeaking, speak, stop, isSupported } = useSpeechSynthesis()
+const { isSpeaking, speak, stop, isSupported } = useBestWebVoice()
 const ttsText = ref('Welcome to Vue Text to Speech! Click play to hear me speak.')
 const { waveformData } = useFakeWaveform(isSpeaking)
 useTabEntrance()

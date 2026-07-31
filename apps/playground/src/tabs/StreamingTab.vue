@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import { ref, computed, onUnmounted } from 'vue'
 import { useStreamingTTS } from 'vue-text-to-speech'
+import { useVoiceInjectedProvider } from '../composables/useBestWebVoice'
 import WaveformCanvas from '../components/WaveformCanvas.vue'
 import { useFakeWaveform } from '../composables/useFakeWaveform'
 import { useTabEntrance } from '../composables/useTabEntrance'
@@ -20,7 +21,8 @@ const isRunning = ref(false)
 let abortController: AbortController | null = null
 
 // ── Streaming TTS ──────────────────────────────────────────────────────────────
-const { pipeStream, queue, currentItem, isStreaming, stop: stopTTS } = useStreamingTTS()
+const provider = useVoiceInjectedProvider()
+const { pipeStream, queue, currentItem, isStreaming, stop: stopTTS } = useStreamingTTS({ provider })
 const isSpeakingStream = computed(() => isStreaming.value ?? false)
 const { waveformData } = useFakeWaveform(isSpeakingStream)
 useTabEntrance()

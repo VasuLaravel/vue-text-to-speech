@@ -1,15 +1,17 @@
 ﻿<script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useVoiceQueue } from 'vue-text-to-speech'
+import { useVoiceInjectedProvider } from '../composables/useBestWebVoice'
 import WaveformCanvas from '../components/WaveformCanvas.vue'
 import { useFakeWaveform } from '../composables/useFakeWaveform'
 import { useToast } from '../composables/useToast'
 import { useTabEntrance } from '../composables/useTabEntrance'
 
+const provider = useVoiceInjectedProvider()
 const {
   queue, currentItem, isPlaying,
   enqueue, clear, skip,
-} = useVoiceQueue()
+} = useVoiceQueue({ provider })
 
 const inputText = ref('')
 const errorMsg = ref('')

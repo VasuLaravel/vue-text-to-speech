@@ -1,7 +1,8 @@
 ﻿<script setup lang="ts">
 import { ref, computed } from 'vue'
-import { VueSpeechPlayer, VueSpeechRecorder, VueSpeechVoiceSelect, useSpeechSynthesis } from 'vue-text-to-speech'
+import { VueSpeechPlayer, VueSpeechRecorder, VueSpeechVoiceSelect } from 'vue-text-to-speech'
 import type { VoiceInfo } from 'vue-text-to-speech'
+import { useBestWebVoice } from '../composables/useBestWebVoice'
 import CodeBlock from '../components/CodeBlock.vue'
 
 // ── Player CSS var editor ──────────────────────────────────────────────────────
@@ -49,8 +50,7 @@ const recorderCode = computed(() =>
 )
 
 // ── VoiceSelect v-model demo ───────────────────────────────────────────────────
-const { voices, isLoadingVoices } = useSpeechSynthesis()
-const selectedVoice = ref<VoiceInfo | undefined>(undefined)
+const { voices, isLoadingVoices, selectedVoice } = useBestWebVoice()
 
 
 const voiceSelectCode = `<script setup>

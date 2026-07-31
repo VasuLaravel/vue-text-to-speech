@@ -1,5 +1,5 @@
 ﻿import { createApp } from 'vue'
-import { Quasar } from 'quasar'
+import { Quasar, Notify } from 'quasar'
 // theme.css must be imported before Quasar so --pg-* vars take precedence
 import './styles/theme.css'
 import 'quasar/dist/quasar.css'
@@ -20,6 +20,6 @@ function getProviderConfig(): ProviderConfig {
 }
 
 createApp(App)
-  .use(Quasar, { plugins: {} })
+  .use(Quasar, { plugins: { Notify } })
   .use(VueSpeech, getProviderConfig())
   .mount('#app')

@@ -1,15 +1,15 @@
 ﻿<script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useSpeechSynthesis } from 'vue-text-to-speech'
 import WaveformCanvas from '../components/WaveformCanvas.vue'
 import { useFakeWaveform } from '../composables/useFakeWaveform'
 import { useTabEntrance } from '../composables/useTabEntrance'
+import { useBestWebVoice } from '../composables/useBestWebVoice'
 
 const {
   isSpeaking, isPaused, voices, isLoadingVoices,
   selectedVoice, rate, pitch, volume, error: ttsError,
   speak, stop, pause, resume, isSupported,
-} = useSpeechSynthesis()
+} = useBestWebVoice()
 
 const ttsText = ref('The quick brown fox jumps over the lazy dog. Text-to-speech synthesis converts written text into spoken words using configurable voice, rate, pitch, and volume settings.')
 const errorDismissed = ref(false)
