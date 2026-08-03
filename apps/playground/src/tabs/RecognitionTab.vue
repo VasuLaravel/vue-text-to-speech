@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ref, watch, onUnmounted } from 'vue'
+import { ref, shallowRef, watch, onUnmounted } from 'vue'
 import { useSpeechRecognition } from 'vue-text-to-speech'
 import WaveformCanvas from '../components/WaveformCanvas.vue'
 import { useAudioVisualizer } from '../composables/useAudioVisualizer'
@@ -24,44 +24,57 @@ const micBtnDebounce = ref(false)
 // ── Web Audio visualizer on MediaStream ──────────────────────────────────────
 const { analyzerData, isActive: vizActive, start: startViz, stop: stopViz } = useAudioVisualizer()
 
-// ── Speech recognition (actual API: isListening, transcript, finalTranscript, confidence) ────
-// We create one instance per lang/continuous combo; re-create on change via watch
-let recInstance = useSpeechRecognition({ lang: selectedLang.value, continuous: continuous.value })
+// ── Speech recognition ────────────────────────────────────────────────────────
+// shallowRef so reassignment (on lang/continuous change) is tracked reactively;
+// watches that access recRef.value.X.value re-evaluate against the NEW instance.
+const recRef = shallowRef(useSpeechRecognition({ lang: selectedLang.value, continuous: continuous.value }))
 
-const isListening = ref(recInstance.isListening.value)
-const isSupported = ref(recInstance.isSupported.value)
+const isListening = ref(recRef.value.isListening.value)
+const isSupported = ref(recRef.value.isSupported.value)
 const transcriptDisplay = ref('')
 const interimDisplay = ref('')
 const lastConfidence = ref<number | null>(null)
 
-// Sync reactive refs from the underlying composable
-function syncFromInstance() {
-  isListening.value = recInstance.isListening.value
-  isSupported.value = recInstance.isSupported.value
-}
+// Chrome always returns confidence=0 for isFinal=true results; the real score
+// only appears on interim events. We hold it here and use it on the final.
+let _lastInterimConf = 0
 
-// Watch the composable's transcript for final results
-watch(() => recInstance.finalTranscript.value, (val) => {
+// Track interim confidence as it arrives (non-zero, comes before the final event)
+watch(() => recRef.value.confidence.value, (val) => {
+  const n = val ?? 0
+  if (n > 0) _lastInterimConf = n
+})
+
+// When a final transcript arrives, append it and resolve the confidence
+watch(() => recRef.value.finalTranscript.value, (val) => {
   if (val) {
     transcriptDisplay.value += (transcriptDisplay.value ? ' ' : '') + val
-    lastConfidence.value = recInstance.confidence.value ?? null
+    // Prefer final confidence; fall back to last interim value (Chrome workaround)
+    const finalConf = recRef.value.confidence.value ?? 0
+    const conf = finalConf > 0 ? finalConf : _lastInterimConf
+    lastConfidence.value = conf > 0 ? conf : null
+    _lastInterimConf = 0  // reset for next utterance
   }
 })
 
-watch(() => recInstance.transcript.value, (val) => {
+watch(() => recRef.value.transcript.value, (val) => {
   interimDisplay.value = val ?? ''
 })
 
-watch(() => recInstance.isListening.value, (val) => {
+watch(() => recRef.value.isListening.value, (val) => {
   isListening.value = val
 })
 
 // ── Re-create composable when lang/continuous changes ─────────────────────────
-// (useSpeechRecognition takes static options; we swap out the instance)
+// Assigning to recRef.value (shallowRef) makes all watches above re-evaluate
+// against the new instance automatically — no manual dep tracking needed.
 watch([selectedLang, continuous], () => {
-  if (isListening.value) recInstance.stop()
-  recInstance = useSpeechRecognition({ lang: selectedLang.value, continuous: continuous.value })
-  syncFromInstance()
+  if (isListening.value) recRef.value.stop()
+  stopViz()
+  isListening.value = false
+  _lastInterimConf = 0
+  recRef.value = useSpeechRecognition({ lang: selectedLang.value, continuous: continuous.value })
+  isSupported.value = recRef.value.isSupported.value
 })
 
 // ── Mic button ───────────────────────────────────────────────────────────────
@@ -71,7 +84,7 @@ async function toggleMic() {
   setTimeout(() => { micBtnDebounce.value = false }, 300)
 
   if (isListening.value) {
-    recInstance.stop()
+    recRef.value.stop()
     stopViz()
     return
   }
@@ -80,7 +93,7 @@ async function toggleMic() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     startViz(stream)
-    recInstance.start()
+    recRef.value.start()
     isListening.value = true
   } catch (err: unknown) {
     const e = err as Error
@@ -105,13 +118,14 @@ function confidenceColor(c: number) {
 }
 
 // ── Cleanup ───────────────────────────────────────────────────────────────────
-onUnmounted(() => { if (isListening.value) recInstance.stop(); stopViz() })
+onUnmounted(() => { if (isListening.value) recRef.value.stop(); stopViz() })
 
 function clearTranscript() {
   transcriptDisplay.value = ''
   interimDisplay.value = ''
   lastConfidence.value = null
-  recInstance.resetTranscript()
+  _lastInterimConf = 0
+  recRef.value.resetTranscript()
 }
 </script>
 
@@ -137,7 +151,9 @@ function clearTranscript() {
       </div>
       <label class="rec__toggle">
         <input v-model="continuous" type="checkbox" role="switch" :disabled="isListening" aria-label="Continuous mode" />
-        <span>Continuous mode</span>
+        <span>Continuous mode
+          <span class="rec__toggle-hint">{{ continuous ? 'stays open — speak freely' : 'one phrase at a time' }}</span>
+        </span>
       </label>
       <button class="rec__clear-btn" :disabled="!transcriptDisplay && !interimDisplay" @click="clearTranscript">Clear transcript</button>
     </div>
@@ -213,6 +229,7 @@ function clearTranscript() {
 .rec__select:focus { border-color: var(--pg-primary); }
 .rec__toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: .85rem; color: var(--pg-text); }
 .rec__toggle input { accent-color: var(--pg-primary); }
+.rec__toggle-hint { display: block; font-size: .72rem; color: var(--pg-text-muted); margin-top: 1px; }
 .rec__clear-btn {
   padding: 8px 14px; background: var(--pg-surface-2); border: 1px solid var(--pg-border);
   border-radius: var(--pg-radius-sm); color: var(--pg-text); cursor: pointer; font-size: .82rem;

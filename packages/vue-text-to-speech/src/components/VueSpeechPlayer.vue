@@ -11,8 +11,22 @@ const props = withDefaults(
     text: string
     /** Start speaking automatically when the component mounts */
     autoSpeak?: boolean
+    /** Show the voice selector row (default: true) */
+    showVoiceSelect?: boolean
+    /** Show the Rate slider (default: true) */
+    showRate?: boolean
+    /** Show the Pitch slider (default: true) */
+    showPitch?: boolean
+    /** Show the Volume slider (default: true) */
+    showVolume?: boolean
   }>(),
-  { autoSpeak: false },
+  {
+    autoSpeak: false,
+    showVoiceSelect: true,
+    showRate: true,
+    showPitch: true,
+    showVolume: true,
+  },
 )
 
 const emit = defineEmits<{
@@ -97,7 +111,7 @@ onMounted(() => {
 
     <template v-else>
       <!-- Voice selector -->
-      <div class="vts-player__voice-row">
+      <div v-if="props.showVoiceSelect" class="vts-player__voice-row">
         <label class="vts-player__field-label" for="vts-voice-select">Voice</label>
         <VueSpeechVoiceSelect
           id="vts-voice-select"
@@ -109,8 +123,8 @@ onMounted(() => {
       </div>
 
       <!-- Rate / Pitch / Volume sliders -->
-      <div class="vts-player__sliders">
-        <label class="vts-player__slider-label">
+      <div v-if="props.showRate || props.showPitch || props.showVolume" class="vts-player__sliders">
+        <label v-if="props.showRate" class="vts-player__slider-label">
           <span>Rate <span class="vts-player__slider-val">{{ rate.toFixed(1) }}</span></span>
           <input
             type="range"
@@ -121,7 +135,7 @@ onMounted(() => {
             aria-label="Speech rate"
           />
         </label>
-        <label class="vts-player__slider-label">
+        <label v-if="props.showPitch" class="vts-player__slider-label">
           <span>Pitch <span class="vts-player__slider-val">{{ pitch.toFixed(1) }}</span></span>
           <input
             type="range"
@@ -132,7 +146,7 @@ onMounted(() => {
             aria-label="Speech pitch"
           />
         </label>
-        <label class="vts-player__slider-label">
+        <label v-if="props.showVolume" class="vts-player__slider-label">
           <span>Volume <span class="vts-player__slider-val">{{ volume.toFixed(2) }}</span></span>
           <input
             type="range"

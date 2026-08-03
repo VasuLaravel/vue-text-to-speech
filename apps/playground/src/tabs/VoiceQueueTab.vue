@@ -16,6 +16,12 @@ const {
 const inputText = ref('')
 const errorMsg = ref('')
 
+// ── Staging area ───────────────────────────────────────────────────────────────
+// Items accumulate here until the user clicks "Play All".
+// useVoiceQueue auto-starts the moment enqueue() is called, so we never call
+// enqueue() until the user explicitly triggers playback.
+const pendingItems = ref<string[]>([])
+
 // ── Fake waveform (isPlaying = something is being spoken) ─────────────────
 const isSpeakingQueue = computed(() => isPlaying.value ?? false)
 const { waveformData } = useFakeWaveform(isSpeakingQueue)
@@ -31,14 +37,26 @@ const CHIPS = [
   'Thank you and have a great day!',
 ]
 
-function fillChip(text: string) { inputText.value = text }
+// Chip click: add directly to the queue (no textarea round-trip needed)
+function addChip(text: string) {
+  if (isPlaying.value || (queue.value?.length ?? 0) > 0) {
+    enqueue(text)  // already playing — append live
+  } else {
+    pendingItems.value.push(text)
+  }
+  toastSuccess('Added to queue')
+}
 
-// ── Enqueue ────────────────────────────────────────────────────────────────────
+// ── Enqueue via textarea ───────────────────────────────────────────────────────
 function addToQueue() {
   const text = inputText.value.trim()
   if (!text) { errorMsg.value = 'Please enter some text first.'; return }
   errorMsg.value = ''
-  enqueue(text)
+  if (isPlaying.value || (queue.value?.length ?? 0) > 0) {
+    enqueue(text)  // already playing — append live
+  } else {
+    pendingItems.value.push(text)
+  }
   inputText.value = ''
   toastSuccess('Added to queue')
 }
@@ -48,34 +66,32 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 // ── Play All ───────────────────────────────────────────────────────────────────
-// The queue auto-plays — just enqueue; if already playing, enqueue adds to end
+// Transfer all staged items into the voice queue — playback starts automatically.
 function playAll() {
-  // If queue is empty nothing to do; items auto-advance via useVoiceQueue
-  // Calling enqueue with the first item starts playback if idle
-  // Since queue auto-starts, we just need to ensure it's not paused/stopped
-  // Re-enqueue all items in order by rebuilding (dequeue all + re-enqueue)
-  if (!isPlaying.value && (queue.value?.length ?? 0) > 0) {
-    // Snapshot current queue
-    const items: string[] = [...(queue.value ?? [])]
-    clear()
-    items.forEach(item => enqueue(String(item)))
-  }
+  if (pendingItems.value.length === 0) return
+  const items = [...pendingItems.value]
+  pendingItems.value = []
+  items.forEach(item => enqueue(item))
 }
 
-// ── Remove item by index ───────────────────────────────────────────────────────
+// ── Remove a staged item (only while idle) ─────────────────────────────────────
 function removeItem(index: number) {
-  const arr = [...(queue.value ?? [])]
-  arr.splice(index, 1)
-  const wasCurrent = currentItem.value
-  clear()
-  arr.forEach(t => enqueue(String(t)))
-  // If something was being spoken before the rebuild, skip to advance to new first item
-  if (wasCurrent && arr.length > 0 && !isPlaying.value) {
-    // queue auto-starts on first enqueue; no extra action needed
-  }
+  pendingItems.value.splice(index, 1)
 }
 
-const queueItems = computed(() => queue.value ?? [])
+// ── Clear all ──────────────────────────────────────────────────────────────────
+function clearAll() {
+  pendingItems.value = []
+  clear()  // stops speech and clears the voice queue
+}
+
+// ── Displayed list ─────────────────────────────────────────────────────────────
+// Shows pending items before playback; switches to live voice-queue during play
+// so items disappear from the list as they are spoken.
+const isIdle = computed(() => !isPlaying.value && (queue.value?.length ?? 0) === 0)
+const queueItems = computed<string[]>(() =>
+  isIdle.value ? pendingItems.value : (queue.value as string[] ?? [])
+)
 </script>
 
 <template>
@@ -90,8 +106,8 @@ const queueItems = computed(() => queue.value ?? [])
           v-for="chip in CHIPS"
           :key="chip"
           class="vq__chip"
-          :aria-label="`Fill: ${chip}`"
-          @click="fillChip(chip)"
+          :aria-label="`Add to queue: ${chip}`"
+          @click="addChip(chip)"
         >{{ chip.slice(0, 32) }}{{ chip.length > 32 ? '…' : '' }}</button>
       </div>
 
@@ -118,9 +134,9 @@ const queueItems = computed(() => queue.value ?? [])
 
     <!-- Transport controls -->
     <div class="vq__transport">
-      <button class="vq__btn vq__btn--primary" :disabled="queueItems.length === 0" @click="playAll()">▶ Play All</button>
+      <button class="vq__btn vq__btn--primary" :disabled="pendingItems.length === 0" @click="playAll()">▶ Play All</button>
       <button class="vq__btn" :disabled="!isPlaying" @click="skip()">⏭ Skip</button>
-      <button class="vq__btn vq__btn--danger" :disabled="queueItems.length === 0 && !isPlaying" @click="clear()">✕ Clear Queue</button>
+      <button class="vq__btn vq__btn--danger" :disabled="pendingItems.length === 0 && isIdle" @click="clearAll()">✕ Clear All</button>
       <span v-if="isPlaying" class="pg-badge-speaking" role="status">● Speaking</span>
     </div>
 
@@ -161,11 +177,12 @@ const queueItems = computed(() => queue.value ?? [])
             :aria-label="String(item)"
           >{{ String(item).slice(0, 60) }}{{ String(item).length > 60 ? '…' : '' }}</span>
 
-          <!-- Status badge (T6.5) -->
-          <span class="vq__status-badge pg-badge-queued">queued</span>
+          <!-- Status badge -->
+          <span class="vq__status-badge" :class="isIdle ? 'pg-badge-queued' : 'pg-badge-speaking'">{{ isIdle ? 'staged' : 'queued' }}</span>
 
-          <!-- Remove button (T6.5) -->
+          <!-- Remove button (only while idle — no clear+re-enqueue race during playback) -->
           <button
+            v-if="isIdle"
             class="vq__remove"
             :aria-label="`Remove item ${i + 1}: ${String(item).slice(0, 30)}`"
             @click="removeItem(i)"

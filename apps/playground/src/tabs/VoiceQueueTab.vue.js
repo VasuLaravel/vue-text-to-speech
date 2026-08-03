@@ -1,19 +1,20 @@
 /// <reference types="../../node_modules/.vue-global-types/vue_3.5_0_0_0.d.ts" />
 import { ref, computed } from 'vue';
 import { useVoiceQueue } from 'vue-text-to-speech';
+import { useVoiceInjectedProvider } from '../composables/useBestWebVoice';
 import WaveformCanvas from '../components/WaveformCanvas.vue';
 import { useFakeWaveform } from '../composables/useFakeWaveform';
 import { useToast } from '../composables/useToast';
 import { useTabEntrance } from '../composables/useTabEntrance';
-const { queue, currentItem, isPlaying, enqueue, clear, skip, } = useVoiceQueue();
+const provider = useVoiceInjectedProvider();
+const { queue, currentItem, isPlaying, enqueue, clear, skip, } = useVoiceQueue({ provider });
 const inputText = ref('');
 const errorMsg = ref('');
-// ── Fake waveform (isPlaying = something is being spoken) ─────────────────
+const pendingItems = ref([]);
 const isSpeakingQueue = computed(() => isPlaying.value ?? false);
 const { waveformData } = useFakeWaveform(isSpeakingQueue);
 const { success: toastSuccess } = useToast();
 useTabEntrance();
-// ── Chips ──────────────────────────────────────────────────────────────────────
 const CHIPS = [
     'Hello, how are you?',
     'How can I help you today?',
@@ -21,8 +22,15 @@ const CHIPS = [
     'Your order has been confirmed.',
     'Thank you and have a great day!',
 ];
-function fillChip(text) { inputText.value = text; }
-// ── Enqueue ────────────────────────────────────────────────────────────────────
+function addChip(text) {
+    if (isPlaying.value || (queue.value?.length ?? 0) > 0) {
+        enqueue(text);
+    }
+    else {
+        pendingItems.value.push(text);
+    }
+    toastSuccess('Added to queue');
+}
 function addToQueue() {
     const text = inputText.value.trim();
     if (!text) {
@@ -30,7 +38,12 @@ function addToQueue() {
         return;
     }
     errorMsg.value = '';
-    enqueue(text);
+    if (isPlaying.value || (queue.value?.length ?? 0) > 0) {
+        enqueue(text);
+    }
+    else {
+        pendingItems.value.push(text);
+    }
     inputText.value = '';
     toastSuccess('Added to queue');
 }
@@ -40,33 +53,22 @@ function onKeydown(e) {
         addToQueue();
     }
 }
-// ── Play All ───────────────────────────────────────────────────────────────────
-// The queue auto-plays — just enqueue; if already playing, enqueue adds to end
 function playAll() {
-    // If queue is empty nothing to do; items auto-advance via useVoiceQueue
-    // Calling enqueue with the first item starts playback if idle
-    // Since queue auto-starts, we just need to ensure it's not paused/stopped
-    // Re-enqueue all items in order by rebuilding (dequeue all + re-enqueue)
-    if (!isPlaying.value && (queue.value?.length ?? 0) > 0) {
-        // Snapshot current queue
-        const items = [...(queue.value ?? [])];
-        clear();
-        items.forEach(item => enqueue(String(item)));
-    }
+    if (pendingItems.value.length === 0)
+        return;
+    const items = [...pendingItems.value];
+    pendingItems.value = [];
+    items.forEach(item => enqueue(item));
 }
-// ── Remove item by index ───────────────────────────────────────────────────────
 function removeItem(index) {
-    const arr = [...(queue.value ?? [])];
-    arr.splice(index, 1);
-    const wasCurrent = currentItem.value;
-    clear();
-    arr.forEach(t => enqueue(String(t)));
-    // If something was being spoken before the rebuild, skip to advance to new first item
-    if (wasCurrent && arr.length > 0 && !isPlaying.value) {
-        // queue auto-starts on first enqueue; no extra action needed
-    }
+    pendingItems.value.splice(index, 1);
 }
-const queueItems = computed(() => queue.value ?? []);
+function clearAll() {
+    pendingItems.value = [];
+    clear();
+}
+const isIdle = computed(() => !isPlaying.value && (queue.value?.length ?? 0) === 0);
+const queueItems = computed(() => isIdle.value ? pendingItems.value : (queue.value ?? []);
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
@@ -98,11 +100,11 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
 for (const [chip] of __VLS_getVForSourceType((__VLS_ctx.CHIPS))) {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)({
         ...{ onClick: (...[$event]) => {
-                __VLS_ctx.fillChip(chip);
+                __VLS_ctx.addChip(chip);
             } },
         key: (chip),
         ...{ class: "vq__chip" },
-        'aria-label': (`Fill: ${chip}`),
+        'aria-label': (`Add to queue: ${chip}`),
     });
     (chip.slice(0, 32));
     (chip.length > 32 ? '…' : '');
@@ -285,17 +287,19 @@ const __VLS_self = (await import('vue')).defineComponent({
             WaveformCanvas: WaveformCanvas,
             currentItem: currentItem,
             isPlaying: isPlaying,
-            clear: clear,
             skip: skip,
             inputText: inputText,
             errorMsg: errorMsg,
             waveformData: waveformData,
             CHIPS: CHIPS,
-            fillChip: fillChip,
+            addChip: addChip,
             addToQueue: addToQueue,
             onKeydown: onKeydown,
             playAll: playAll,
             removeItem: removeItem,
+            clearAll: clearAll,
+            isIdle: isIdle,
+            pendingItems: pendingItems,
             queueItems: queueItems,
         };
     },

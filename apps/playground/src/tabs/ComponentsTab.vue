@@ -1,7 +1,6 @@
 ﻿<script setup lang="ts">
 import { ref, computed } from 'vue'
 import { VueSpeechPlayer, VueSpeechRecorder, VueSpeechVoiceSelect } from 'vue-text-to-speech'
-import type { VoiceInfo } from 'vue-text-to-speech'
 import { useBestWebVoice } from '../composables/useBestWebVoice'
 import CodeBlock from '../components/CodeBlock.vue'
 
@@ -23,20 +22,33 @@ const playerCSSVars = ref<Record<string, string>>(
 
 function resetPlayerVars() {
   PLAYER_VARS.forEach(v => { playerCSSVars.value[v.key] = v.default })
+  showVoiceSelect.value = true
+  showRate.value = true
+  showPitch.value = true
+  showVolume.value = true
 }
 
 const playerStyle = computed(() =>
   Object.entries(playerCSSVars.value).map(([k, v]) => `${k}: ${v}`).join('; ')
 )
 
-const playerCode = computed(() =>
-`<VueSpeechPlayer
-  text="Hello from vue-text-to-speech!"
-  :style="{
-${Object.entries(playerCSSVars.value).map(([k, v]) => `    '${k}': '${v}'`).join(',\n')}
-  }"
-/>`
-)
+// ── Visibility toggles ───────────────────────────────────────────────────────────────
+const showVoiceSelect = ref(true)
+const showRate        = ref(true)
+const showPitch       = ref(true)
+const showVolume      = ref(true)
+
+const playerCode = computed(() => {
+  const styleLines = Object.entries(playerCSSVars.value)
+    .map(([k, v]) => `    '${k}': '${v}'`).join(',\n')
+  const visProps = [
+    !showVoiceSelect.value ? ':show-voice-select="false"' : '',
+    !showRate.value        ? ':show-rate="false"'         : '',
+    !showPitch.value       ? ':show-pitch="false"'        : '',
+    !showVolume.value      ? ':show-volume="false"'       : '',
+  ].filter(Boolean).map(p => `  ${p}`).join('\n')
+  return `<VueSpeechPlayer\n  text="Hello from vue-text-to-speech!"${visProps ? '\n' + visProps : ''}\n  :style="{\n${styleLines}\n  }"\n/>`
+})
 
 // ── Recorder CSS var editor ────────────────────────────────────────────────────
 const recorderRecordingColor = ref('#f43f5e')
@@ -71,15 +83,22 @@ const selectedVoice = ref(null)
     <!-- Section A: VueSpeechPlayer -->
     <section class="comp__section pg-card" aria-labelledby="player-heading">
       <h2 id="player-heading" class="comp__heading">VueSpeechPlayer</h2>
-      <p class="comp__desc pg-text-muted">Drag the sliders and color pickers to customize the player's CSS variables live.</p>
+      <p class="comp__desc pg-text-muted">Use the color pickers and text fields to customize CSS variables, and toggle which controls are visible.</p>
 
       <div class="comp__row">
-        <!-- Preview with injected CSS vars -->
-        <div class="comp__preview" :style="playerStyle">
-          <VueSpeechPlayer text="Hello from vue-text-to-speech! This is a customizable speech player component." />
+        <!-- Preview — style applied directly to the component so CSS vars take effect -->
+        <div class="comp__preview">
+          <VueSpeechPlayer
+            text="Hello from vue-text-to-speech! This is a customizable speech player component."
+            :style="playerStyle"
+            :show-voice-select="showVoiceSelect"
+            :show-rate="showRate"
+            :show-pitch="showPitch"
+            :show-volume="showVolume"
+          />
         </div>
 
-        <!-- CSS var editor -->
+        <!-- CSS var editor + visibility toggles -->
         <div class="comp__editor">
           <div v-for="varDef in PLAYER_VARS" :key="varDef.key" class="comp__var-row">
             <label :for="'player-' + varDef.key" class="comp__var-label">{{ varDef.label }}</label>
@@ -100,7 +119,14 @@ const selectedVoice = ref(null)
               :aria-label="`${varDef.label} value`"
             />
           </div>
-          <button class="comp__reset-btn" @click="resetPlayerVars">↺ Reset</button>
+
+          <div class="comp__divider">Show / hide elements</div>
+          <label class="comp__check"><input v-model="showVoiceSelect" type="checkbox" /> Voice selector</label>
+          <label class="comp__check"><input v-model="showRate"        type="checkbox" /> Rate slider</label>
+          <label class="comp__check"><input v-model="showPitch"       type="checkbox" /> Pitch slider</label>
+          <label class="comp__check"><input v-model="showVolume"      type="checkbox" /> Volume slider</label>
+
+          <button class="comp__reset-btn" style="margin-top:4px" @click="resetPlayerVars">↺ Reset all</button>
         </div>
       </div>
 
@@ -194,6 +220,16 @@ const selectedVoice = ref(null)
   border-radius: var(--pg-radius-sm); color: var(--pg-text-muted); cursor: pointer; font-size: .8rem;
 }
 .comp__reset-btn:hover { color: var(--pg-primary); border-color: var(--pg-primary); }
+.comp__divider {
+  font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--pg-text-muted); border-top: 1px solid var(--pg-border);
+  padding-top: 10px; margin-top: 2px;
+}
+.comp__check {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .8rem; color: var(--pg-text); cursor: pointer;
+}
+.comp__check input { accent-color: var(--pg-primary); cursor: pointer; }
 .comp__details { margin-top: 4px; }
 .comp__summary {
   cursor: pointer; padding: 8px 14px; background: var(--pg-surface-2); border: 1px solid var(--pg-border);
