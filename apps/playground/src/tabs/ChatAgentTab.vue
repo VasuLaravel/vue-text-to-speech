@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
-import { ref, computed, nextTick, onUnmounted } from 'vue'
-import { useStreamingTTS } from 'vue-text-to-speech'
+import { ref, computed, nextTick, onUnmounted, watch } from 'vue'
+import { useStreamingTTS, useSpeechRecognition } from 'vue-text-to-speech'
 import { useVoiceInjectedProvider } from '../composables/useBestWebVoice'
 import WaveformCanvas from '../components/WaveformCanvas.vue'
 import CodeBlock from '../components/CodeBlock.vue'
@@ -17,6 +17,20 @@ const messages = ref<Message[]>([])
 const inputText = ref('')
 const threadEl = ref<HTMLElement | null>(null)
 let msgId = 0
+
+// ── Speech Recognition for voice input ───────────────────────────────────────
+const rec = useSpeechRecognition({ continuous: true })
+
+// Append each committed final result to the text input
+watch(rec.finalTranscript, (val) => {
+  if (!val) return
+  const sep = inputText.value && !inputText.value.endsWith(' ') ? ' ' : ''
+  inputText.value += sep + val
+})
+
+function toggleMic() {
+  rec.isListening.value ? rec.stop() : rec.start()
+}
 
 // ── Persona ────────────────────────────────────────────────────────────────────
 const PERSONAS: { value: Persona; label: string; avatar: string }[] = [
@@ -37,10 +51,28 @@ useTabEntrance()
 // ── Simulated LLM ──────────────────────────────────────────────────────────────
 const llm = computed(() => useSimulatedLLM(currentPersona.value.value, 28))
 
-// ── Real AI toggle ─────────────────────────────────────────────────────────────
-const useRealAI = ref(false)
-const openaiKey = ref('')  // in-memory only — never localStorage (S-1)
+// ── AI Provider selection ────────────────────────────────────────────────────
+type AIProvider = 'simulated' | 'openai' | 'azure'
+const aiProvider = ref<AIProvider>('simulated')
+
+// OpenAI — in-memory only, never localStorage (S-1)
+const openaiKey = ref('')
 const showKey = ref(false)
+
+// Azure OpenAI — in-memory only (S-1)
+const azureEndpoint   = ref('')                      // e.g. https://my-res.openai.azure.com
+const azureDeployment = ref('gpt-4o')                // deployment / model name
+const azureKey        = ref('')
+const azureApiVersion = ref('2024-08-01-preview')
+const showAzureKey    = ref(false)
+
+const sendDisabled = computed(() => {
+  if (isBusy.value || !inputText.value.trim()) return true
+  if (aiProvider.value === 'openai' && !openaiKey.value.trim()) return true
+  if (aiProvider.value === 'azure' &&
+    (!azureEndpoint.value.trim() || !azureDeployment.value.trim() || !azureKey.value.trim())) return true
+  return false
+})
 
 // ── Accumulated current AI message ────────────────────────────────────────────
 const streamingMsgId = ref<number | null>(null)
@@ -71,10 +103,12 @@ const isBusy = computed(() => isStreaming.value)
 async function send() {
   const text = inputText.value.trim()
   if (!text) return
-  if (useRealAI.value && !openaiKey.value.trim()) return  // E-T2.2
+  if (sendDisabled.value) return
 
   // Stop any current TTS and replace immediately (E-T2.1 default: stop+replace)
   if (isStreaming.value) stopTTS()
+  // Stop mic so dictated text isn't appended after send
+  if (rec.isListening.value) rec.stop()
 
   messages.value.push({ role: 'user', text, id: ++msgId })
   inputText.value = ''
@@ -87,9 +121,12 @@ async function send() {
   streamingMsgId.value = aiId
 
   try {
-    const stream = useRealAI.value && openaiKey.value.trim()
-      ? openaiStream(openaiKey.value, buildMessages(text))
-      : llm.value.start()
+    const stream =
+      aiProvider.value === 'openai' && openaiKey.value.trim()
+        ? openaiStream(openaiKey.value, buildMessages(text))
+        : aiProvider.value === 'azure' && azureKey.value.trim()
+          ? azureStream(azureEndpoint.value, azureDeployment.value, azureKey.value, azureApiVersion.value, buildMessages(text))
+          : llm.value.start()
 
     // Accumulate text into the AI bubble as tokens arrive
     const wrapped = accumulateInBubble(stream, aiId)
@@ -123,7 +160,31 @@ function buildMessages(userText: string) {
   return [{ role: 'system', content: sys }, { role: 'user', content: userText }]
 }
 
-// ── Real OpenAI SSE stream (D-7, S-2, S-8) ────────────────────────────────────
+// ── Shared SSE line parser ────────────────────────────────────────────────────
+async function* parseSSE(reader: ReadableStreamDefaultReader<Uint8Array>): AsyncGenerator<string> {
+  const dec = new TextDecoder()
+  let buf = ''
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buf += dec.decode(value, { stream: true })
+    const lines = buf.split('\n')
+    buf = lines.pop() ?? ''
+    for (const line of lines) {
+      const t = line.trim()
+      if (!t.startsWith('data:')) continue
+      const d = t.slice(5).trim()
+      if (d === '[DONE]') return
+      try {
+        const content = (JSON.parse(d) as { choices: { delta: { content?: string } }[] })
+          .choices?.[0]?.delta?.content
+        if (content) yield content
+      } catch { /* malformed — skip */ }
+    }
+  }
+}
+
+// ── Standard OpenAI SSE stream (S-2, S-8) ────────────────────────────────────
 async function* openaiStream(
   key: string,
   msgs: { role: string; content: string }[],
@@ -138,30 +199,28 @@ async function* openaiStream(
   })
 
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${res.statusText}`)
+  yield* parseSSE(res.body!.getReader())
+}
 
-  const reader = res.body!.getReader()
-  const dec = new TextDecoder()
-  let buf = ''
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buf += dec.decode(value, { stream: true })
-    const lines = buf.split('\n')
-    buf = lines.pop() ?? ''
-
-    for (const line of lines) {
-      const t = line.trim()
-      if (!t.startsWith('data:')) continue  // S-8: validate prefix
-      const d = t.slice(5).trim()
-      if (d === '[DONE]') return
-      try {
-        const content = (JSON.parse(d) as { choices: { delta: { content?: string } }[] })
-          .choices?.[0]?.delta?.content
-        if (content) yield content
-      } catch { /* malformed — skip (S-8) */ }
-    }
-  }
+// ── Azure OpenAI SSE stream ────────────────────────────────────────────────────
+async function* azureStream(
+  endpoint: string,
+  deployment: string,
+  key: string,
+  apiVersion: string,
+  msgs: { role: string; content: string }[],
+): AsyncGenerator<string> {
+  const url = `${endpoint.replace(/\/$/, '')}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'api-key': key.trim(),           // Azure uses api-key, not Bearer
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ messages: msgs, stream: true }),  // no 'model' field for Azure
+  })
+  if (!res.ok) throw new Error(`Azure OpenAI ${res.status}: ${res.statusText}`)
+  yield* parseSSE(res.body!.getReader())
 }
 
 // ── Scroll ─────────────────────────────────────────────────────────────────────
@@ -183,7 +242,7 @@ function switchPersona(i: number) {
 }
 
 // ── Cleanup ────────────────────────────────────────────────────────────────────
-onUnmounted(() => stopTTS())
+onUnmounted(() => { stopTTS(); rec.stop() })
 
 // ── Code snippet ───────────────────────────────────────────────────────────────
 const CODE = `const { pipeStream } = useStreamingTTS()
@@ -225,33 +284,58 @@ async function* openaiStream(key, messages) {
 
         <div class="chat__divider" />
 
-        <!-- Connect Real AI toggle -->
-        <label class="chat__toggle">
-          <input v-model="useRealAI" type="checkbox" role="switch" :aria-label="`Use real OpenAI API: ${useRealAI ? 'on' : 'off'}`" />
-          <span class="chat__toggle-label">Connect Real AI</span>
-        </label>
+        <!-- AI Provider tabs -->
+        <div class="pg-label" style="margin-bottom:6px">AI Provider</div>
+        <div class="chat__ai-tabs" role="tablist" aria-label="AI provider">
+          <button role="tab" class="chat__ai-tab" :class="{ 'chat__ai-tab--active': aiProvider === 'simulated' }" :aria-selected="aiProvider === 'simulated'" @click="aiProvider = 'simulated'">Simulated</button>
+          <button role="tab" class="chat__ai-tab" :class="{ 'chat__ai-tab--active': aiProvider === 'openai' }"    :aria-selected="aiProvider === 'openai'"    @click="aiProvider = 'openai'">OpenAI</button>
+          <button role="tab" class="chat__ai-tab" :class="{ 'chat__ai-tab--active': aiProvider === 'azure' }"     :aria-selected="aiProvider === 'azure'"     @click="aiProvider = 'azure'">Azure</button>
+        </div>
 
-        <template v-if="useRealAI">
-          <!-- Security warning (S-3) -->
-          <div class="chat__security-warn" role="alert">
-            ⚠ For production, proxy requests through your server. Never expose API keys in the browser.
+        <!-- Simulated -->
+        <p v-if="aiProvider === 'simulated'" class="chat__provider-hint">Built-in simulated responses. No API key required.</p>
+
+        <!-- OpenAI -->
+        <template v-if="aiProvider === 'openai'">
+          <div class="chat__security-warn" role="alert">⚠ For production, proxy through your server. Never expose API keys in the browser.</div>
+          <div>
+            <label class="chat__field-label" for="oai-key">API Key</label>
+            <div class="chat__key-row">
+              <input id="oai-key" :type="showKey ? 'text' : 'password'" v-model="openaiKey"
+                class="chat__key-input" placeholder="sk-…" autocomplete="off" aria-label="OpenAI API key" />
+              <button class="chat__key-toggle" :aria-label="showKey ? 'Hide' : 'Show'" @click="showKey = !showKey">{{ showKey ? '🙈' : '👁' }}</button>
+            </div>
           </div>
-          <div class="chat__key-row">
-            <input
-              :type="showKey ? 'text' : 'password'"
-              v-model="openaiKey"
-              class="chat__key-input"
-              placeholder="sk-…"
-              autocomplete="off"
-              aria-label="OpenAI API key"
-            />
-            <button
-              class="chat__key-toggle"
-              :aria-label="showKey ? 'Hide API key' : 'Show API key'"
-              @click="showKey = !showKey"
-            >{{ showKey ? '🙈' : '👁' }}</button>
+          <p v-if="!openaiKey.trim()" class="chat__key-hint">Enter your OpenAI API key above</p>
+        </template>
+
+        <!-- Azure OpenAI -->
+        <template v-if="aiProvider === 'azure'">
+          <div class="chat__security-warn" role="alert">⚠ For production, proxy through your server. Never expose API keys in the browser.</div>
+          <div>
+            <label class="chat__field-label" for="az-endpoint">Endpoint URL</label>
+            <input id="az-endpoint" v-model="azureEndpoint" class="chat__text-input"
+              placeholder="https://my-res.openai.azure.com" autocomplete="off" aria-label="Azure endpoint" />
           </div>
-          <p v-if="useRealAI && !openaiKey.trim()" class="chat__key-hint">Enter your OpenAI API key above</p>
+          <div>
+            <label class="chat__field-label" for="az-deploy">Deployment name</label>
+            <input id="az-deploy" v-model="azureDeployment" class="chat__text-input"
+              placeholder="gpt-4o" autocomplete="off" aria-label="Azure deployment name" />
+          </div>
+          <div>
+            <label class="chat__field-label" for="az-key">API Key</label>
+            <div class="chat__key-row">
+              <input id="az-key" :type="showAzureKey ? 'text' : 'password'" v-model="azureKey"
+                class="chat__key-input" placeholder="Azure key…" autocomplete="off" aria-label="Azure API key" />
+              <button class="chat__key-toggle" :aria-label="showAzureKey ? 'Hide' : 'Show'" @click="showAzureKey = !showAzureKey">{{ showAzureKey ? '🙈' : '👁' }}</button>
+            </div>
+          </div>
+          <div>
+            <label class="chat__field-label" for="az-version">API version</label>
+            <input id="az-version" v-model="azureApiVersion" class="chat__text-input"
+              placeholder="2024-08-01-preview" autocomplete="off" aria-label="Azure API version" />
+          </div>
+          <p v-if="!azureEndpoint.trim() || !azureDeployment.trim() || !azureKey.trim()" class="chat__key-hint">Fill in endpoint, deployment and key above</p>
         </template>
       </aside>
 
@@ -314,21 +398,35 @@ async function* openaiStream(key, messages) {
           <textarea
             v-model="inputText"
             class="chat__input"
-            placeholder="Type a message… (Enter to send, Shift+Enter for newline)"
+            placeholder="Type or dictate a message… (Enter to send, Shift+Enter for newline)"
             rows="1"
             :disabled="isBusy"
             aria-label="Chat message input"
             @keydown="onKeydown"
           />
+          <!-- Mic button -->
+          <button
+            v-if="rec.isSupported.value"
+            class="chat__mic-btn"
+            :class="{ 'chat__mic-btn--listening': rec.isListening.value }"
+            :aria-label="rec.isListening.value ? 'Stop dictation' : 'Start voice dictation'"
+            :aria-pressed="rec.isListening.value"
+            @click="toggleMic"
+          >🎤</button>
           <button
             class="chat__send-btn"
-            :disabled="isBusy || !inputText.trim() || (useRealAI && !openaiKey.trim())"
-            :aria-disabled="isBusy || !inputText.trim()"
+            :disabled="sendDisabled"
+            :aria-disabled="sendDisabled"
             aria-label="Send message"
             @click="send"
           >
             <span aria-hidden="true">▶</span> Send
           </button>
+        </div>
+        <!-- Interim / listening status -->
+        <div v-if="rec.isListening.value" class="chat__interim" aria-live="polite">
+          <span v-if="rec.transcript.value" class="chat__interim-text">🎤 {{ rec.transcript.value }}</span>
+          <span v-else class="chat__interim-text chat__interim-text--idle">🎤 Listening…</span>
         </div>
       </div>
     </div>
@@ -343,7 +441,7 @@ async function* openaiStream(key, messages) {
 
 <style scoped>
 .chat { display: flex; flex-direction: column; gap: 16px; }
-.chat__layout { display: grid; grid-template-columns: 240px 1fr; gap: 16px; min-height: 520px; }
+.chat__layout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; min-height: 520px; }
 @media (max-width: 768px) { .chat__layout { grid-template-columns: 1fr; } }
 
 /* Sidebar */
@@ -358,9 +456,25 @@ async function* openaiStream(key, messages) {
 .chat__persona-btn:hover { border-color: var(--pg-primary); background: var(--pg-primary-dim); }
 .chat__persona-btn--active { border-color: var(--pg-primary); background: var(--pg-primary-dim); color: var(--pg-primary); font-weight: 600; }
 .chat__divider { height: 1px; background: var(--pg-border); margin: 4px 0; }
-.chat__toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; color: var(--pg-text); }
-.chat__toggle input { accent-color: var(--pg-primary); width: 16px; height: 16px; }
-.chat__toggle-label { flex: 1; }
+
+/* AI provider tabs */
+.chat__ai-tabs { display: flex; gap: 3px; }
+.chat__ai-tab {
+  flex: 1; padding: 5px 2px; font-size: 0.72rem; background: none;
+  border: 1px solid var(--pg-border); border-radius: var(--pg-radius-sm);
+  color: var(--pg-text-muted); cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.chat__ai-tab:hover { border-color: var(--pg-primary); color: var(--pg-text); }
+.chat__ai-tab--active { background: var(--pg-primary-dim); border-color: var(--pg-primary); color: var(--pg-primary); font-weight: 600; }
+.chat__provider-hint { font-size: 0.75rem; color: var(--pg-text-muted); margin: 0; line-height: 1.5; }
+.chat__field-label { font-size: 0.7rem; color: var(--pg-text-muted); margin-bottom: 3px; display: block; text-transform: uppercase; letter-spacing: .04em; }
+.chat__text-input {
+  width: 100%; background: var(--pg-surface-2); border: 1px solid var(--pg-border);
+  border-radius: var(--pg-radius-sm); color: var(--pg-text); padding: 6px 8px;
+  font-size: 0.8rem; outline: none; box-sizing: border-box;
+}
+.chat__text-input:focus { border-color: var(--pg-primary); }
+
 .chat__security-warn {
   background: rgba(244,63,94,.1); border: 1px solid var(--pg-rose); border-radius: var(--pg-radius-sm);
   color: var(--pg-rose); padding: 8px 10px; font-size: 0.75rem; line-height: 1.4;
@@ -421,6 +535,34 @@ async function* openaiStream(key, messages) {
   cursor: pointer; font-size: 0.85rem; font-weight: 600; white-space: nowrap; transition: opacity .15s;
 }
 .chat__send-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* Mic button */
+.chat__mic-btn {
+  width: 38px; height: 38px; border-radius: 50%; background: var(--pg-surface-2);
+  border: 1px solid var(--pg-border); cursor: pointer; font-size: 1.05rem;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: border-color .15s, box-shadow .15s;
+}
+.chat__mic-btn:hover { border-color: var(--pg-primary); }
+.chat__mic-btn--listening {
+  background: rgba(244,63,94,.12); border-color: var(--pg-rose);
+  animation: mic-pulse 1.4s ease-in-out infinite;
+}
+@keyframes mic-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(244,63,94,.45); }
+  50%      { box-shadow: 0 0 0 7px rgba(244,63,94,.0); }
+}
+
+/* Interim transcript bar */
+.chat__interim {
+  background: var(--pg-surface); border: 1px solid var(--pg-border); border-top: none;
+  border-radius: 0 0 var(--pg-radius) var(--pg-radius);
+  padding: 6px 14px; min-height: 28px; display: flex; align-items: center;
+}
+.chat__interim-text {
+  font-size: .8rem; font-style: italic; color: var(--pg-primary);
+}
+.chat__interim-text--idle { color: var(--pg-text-muted); }
 
 /* Code details */
 .chat__code-details { border-radius: var(--pg-radius-sm); overflow: hidden; }

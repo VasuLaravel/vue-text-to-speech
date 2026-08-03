@@ -37,21 +37,32 @@ function makeMockProvider() {
 
 // ─── Helper: mount VueSpeechPlayer with an injected mock provider ─────────────
 
+interface MountPlayerProps {
+  text?: string
+  autoSpeak?: boolean
+  showVoiceSelect?: boolean
+  showRate?: boolean
+  showPitch?: boolean
+  showVolume?: boolean
+}
+
 function mountPlayer(
   provider: ReturnType<typeof makeMockProvider>,
-  props: { text?: string; autoSpeak?: boolean } = {},
+  props: MountPlayerProps = {},
 ) {
-  // Use a parent wrapper component to provide via the injection key
-  const Parent = defineComponent({
-    setup() {
-      provide(SPEECH_PROVIDER_KEY, provider)
+  return mount(VueSpeechPlayer, {
+    props: {
+      text: props.text ?? 'Hello world.',
+      ...(props.autoSpeak !== undefined && { autoSpeak: props.autoSpeak }),
+      ...(props.showVoiceSelect !== undefined && { showVoiceSelect: props.showVoiceSelect }),
+      ...(props.showRate !== undefined && { showRate: props.showRate }),
+      ...(props.showPitch !== undefined && { showPitch: props.showPitch }),
+      ...(props.showVolume !== undefined && { showVolume: props.showVolume }),
     },
-    components: { VueSpeechPlayer },
-    template: `<VueSpeechPlayer text="${props.text ?? 'Hello world.'}" ${
-      props.autoSpeak ? 'auto-speak' : ''
-    } />`,
+    global: {
+      provide: { [SPEECH_PROVIDER_KEY as symbol]: provider },
+    },
   })
-  return mount(Parent)
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -264,13 +275,82 @@ describe('VueSpeechPlayer', () => {
   // ── autoSpeak ─────────────────────────────────────────────────────────────
 
   it('calls speak() on mount when autoSpeak=true', async () => {
-    const Parent = defineComponent({
-      setup() { provide(SPEECH_PROVIDER_KEY, provider) },
-      components: { VueSpeechPlayer },
-      template: `<VueSpeechPlayer text="Auto" :auto-speak="true" />`,
-    })
-    mount(Parent)
+    const wrapper = mountPlayer(provider, { text: 'Auto', autoSpeak: true })
     await flushPromises()
     expect(provider.speak).toHaveBeenCalledWith(expect.objectContaining({ text: 'Auto' }))
+  })
+
+  // ── show/hide props ───────────────────────────────────────────────────────
+
+  describe('showVoiceSelect prop', () => {
+    it('renders voice selector by default (showVoiceSelect=true)', async () => {
+      const wrapper = mountPlayer(provider)
+      await flushPromises()
+      expect(wrapper.find('.vts-player__voice-row').exists()).toBe(true)
+    })
+
+    it('hides voice selector when showVoiceSelect=false', async () => {
+      const wrapper = mountPlayer(provider, { showVoiceSelect: false })
+      await flushPromises()
+      expect(wrapper.find('.vts-player__voice-row').exists()).toBe(false)
+    })
+  })
+
+  describe('showRate prop', () => {
+    it('renders Rate slider by default', async () => {
+      const wrapper = mountPlayer(provider)
+      await flushPromises()
+      expect(wrapper.find('[aria-label="Speech rate"]').exists()).toBe(true)
+    })
+
+    it('hides Rate slider when showRate=false', async () => {
+      const wrapper = mountPlayer(provider, { showRate: false })
+      await flushPromises()
+      expect(wrapper.find('[aria-label="Speech rate"]').exists()).toBe(false)
+    })
+  })
+
+  describe('showPitch prop', () => {
+    it('renders Pitch slider by default', async () => {
+      const wrapper = mountPlayer(provider)
+      await flushPromises()
+      expect(wrapper.find('[aria-label="Speech pitch"]').exists()).toBe(true)
+    })
+
+    it('hides Pitch slider when showPitch=false', async () => {
+      const wrapper = mountPlayer(provider, { showPitch: false })
+      await flushPromises()
+      expect(wrapper.find('[aria-label="Speech pitch"]').exists()).toBe(false)
+    })
+  })
+
+  describe('showVolume prop', () => {
+    it('renders Volume slider by default', async () => {
+      const wrapper = mountPlayer(provider)
+      await flushPromises()
+      expect(wrapper.find('[aria-label="Speech volume"]').exists()).toBe(true)
+    })
+
+    it('hides Volume slider when showVolume=false', async () => {
+      const wrapper = mountPlayer(provider, { showVolume: false })
+      await flushPromises()
+      expect(wrapper.find('[aria-label="Speech volume"]').exists()).toBe(false)
+    })
+  })
+
+  describe('sliders container visibility', () => {
+    it('hides the sliders container when all three sliders are off', async () => {
+      const wrapper = mountPlayer(provider, { showRate: false, showPitch: false, showVolume: false })
+      await flushPromises()
+      expect(wrapper.find('.vts-player__sliders').exists()).toBe(false)
+    })
+
+    it('keeps the sliders container when at least one slider is on', async () => {
+      const wrapper = mountPlayer(provider, { showRate: false, showPitch: false, showVolume: true })
+      await flushPromises()
+      expect(wrapper.find('.vts-player__sliders').exists()).toBe(true)
+      expect(wrapper.find('[aria-label="Speech volume"]').exists()).toBe(true)
+      expect(wrapper.find('[aria-label="Speech rate"]').exists()).toBe(false)
+    })
   })
 })
