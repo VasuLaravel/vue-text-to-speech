@@ -112,8 +112,18 @@ speak('Hello world')
 // structured SpeechError object
 @error="(err: SpeechError) => console.error(err.code, err.message)"
 
+type SpeechErrorCode =
+  | 'NOT_SUPPORTED'
+  | 'PERMISSION_DENIED'
+  | 'NETWORK'
+  | 'API_ERROR'
+  | 'RATE_LIMIT'
+  | 'AUDIO_PLAYBACK'
+  | 'CANCELLED'
+  | 'UNKNOWN'
+
 interface SpeechError {
-  code: 'NOT_SUPPORTED' | 'SYNTHESIS_FAILED' | 'API_ERROR' | 'RATE_LIMIT' | 'NETWORK_ERROR' | 'ABORTED'
+  code: SpeechErrorCode
   message: string
   cause?: unknown
 }

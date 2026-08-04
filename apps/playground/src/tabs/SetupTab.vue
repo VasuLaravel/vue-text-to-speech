@@ -42,7 +42,7 @@ const showOaiKey = ref(false)
 const elKey     = ref('')
 const elVoiceId = ref('21m00Tcm4TlvDq8ikWAM')  // Rachel
 const elModel   = ref('eleven_multilingual_v2')
-const elBase    = ref('')
+const elBase    = ref('/elevenlabs-proxy')
 const showElKey  = ref(false)
 
 // Azure
@@ -260,8 +260,13 @@ const PROVIDERS: { id: ProviderId; name: string; badge: string; description: str
               </select>
             </div>
             <div class="setup__field">
-              <label class="pg-label" for="el-base">Base URL <span class="pg-text-muted" style="font-size:.75rem">(optional)</span></label>
-              <input id="el-base" v-model="elBase" type="text" class="setup__input" placeholder="https://api.elevenlabs.io/v1" aria-label="ElevenLabs base URL" />
+              <label class="pg-label" for="el-base">Base URL <span class="pg-text-muted" style="font-size:.75rem">(proxy path)</span></label>
+              <input id="el-base" v-model="elBase" type="text" class="setup__input" placeholder="/elevenlabs-proxy" aria-label="ElevenLabs base URL" />
+              <p class="pg-text-muted" style="font-size:.75rem;margin:.35rem 0 0">
+                ElevenLabs blocks direct browser calls (CORS). The playground routes
+                <code>/elevenlabs-proxy/*</code> → <code>api.elevenlabs.io</code> server-side
+                so no preflight is triggered. Clear this only if you run your own backend proxy.
+              </p>
             </div>
           </template>
 

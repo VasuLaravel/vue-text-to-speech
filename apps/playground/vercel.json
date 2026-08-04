@@ -26,6 +26,10 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/elevenlabs-proxy/:path*",
+      "destination": "https://api.elevenlabs.io/:path*"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

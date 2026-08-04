@@ -41,10 +41,14 @@ function onFinal(text: string, confidence: number) {
 
 ```ts
 interface UseSpeechRecognitionOptions {
-  /** BCP-47 language tag, e.g. 'en-US'. Defaults to browser language. */
+  /** BCP-47 language tag, e.g. 'en-US'. Defaults to browser UI language. */
   lang?: string
+  /** Return interim (non-final) results. Default: true */
+  interimResults?: boolean
   /** Keep recording after each final result. Default: true */
   continuous?: boolean
+  /** Maximum number of alternative transcripts per result. Default: 1 */
+  maxAlternatives?: number
 }
 
 function useSpeechRecognition(
@@ -60,8 +64,14 @@ interface UseSpeechRecognitionReturn {
   isListening: Readonly<Ref<boolean>>
   /** Live interim transcript (resets on each final result) */
   transcript: Readonly<Ref<string>>
-  /** Accumulated final transcript */
+  /** Most recent committed final transcript */
   finalTranscript: Readonly<Ref<string>>
+  /** Confidence score of the last final result (0–1) */
+  confidence: Readonly<Ref<number>>
+  /** Active BCP-47 language code */
+  lang: string
+  /** Whether continuous recognition is enabled */
+  continuous: boolean
   /** Last error, or null */
   error: Readonly<Ref<SpeechError | null>>
   /** Whether SpeechRecognition is supported in this browser */
@@ -70,26 +80,9 @@ interface UseSpeechRecognitionReturn {
   start(): void
   /** Stop listening */
   stop(): void
-  /** Reset finalTranscript to empty string */
-  reset(): void
+  /** Clear transcript and finalTranscript to empty strings */
+  resetTranscript(): void
 }
-```
-
-## Events via Callbacks
-
-Instead of watching refs you can pass callbacks via composable options:
-
-```ts
-useSpeechRecognition({
-  lang: 'en-US',
-  onTranscript(text: string, confidence: number) {
-    // fired for every interim result
-  },
-  onFinalTranscript(text: string, confidence: number) {
-    // fired once the engine finalizes a phrase
-  },
-  onError(err: SpeechError) { /* ... */ },
-})
 ```
 
 ## Smooth / Continuous Recording

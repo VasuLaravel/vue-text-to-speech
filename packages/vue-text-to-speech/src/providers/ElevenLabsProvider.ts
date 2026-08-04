@@ -12,8 +12,9 @@ export class ElevenLabsProvider implements TTSProvider {
   private _errorCbs: Array<(err: SpeechError) => void> = []
 
   constructor(config: ElevenLabsConfig) {
-    if (config.baseURL && !/^https:\/\//i.test(config.baseURL)) {
-      throw new Error('[vue-text-to-speech] ElevenLabs baseURL must use HTTPS')
+    // Allow https:// URLs and relative paths (e.g. /my-proxy) — reject plain http:// to external hosts
+    if (config.baseURL && !config.baseURL.startsWith('/') && !/^https:\/\//i.test(config.baseURL)) {
+      throw new Error('[vue-text-to-speech] ElevenLabs baseURL must use HTTPS or be a relative path (e.g. /elevenlabs-proxy)')
     }
     this._config = config
   }

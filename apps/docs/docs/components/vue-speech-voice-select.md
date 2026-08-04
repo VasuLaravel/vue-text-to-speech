@@ -12,15 +12,17 @@ import { VueSpeechVoiceSelect } from 'vue-text-to-speech'
 
 ```vue
 <script setup lang="ts">
-import { ref } from 'vue'
 import { VueSpeechVoiceSelect, useSpeechSynthesis } from 'vue-text-to-speech'
 
-const { speak, selectedVoice } = useSpeechSynthesis()
-// Pass selectedVoice directly as v-model
+const { speak, voices, selectedVoice, isLoadingVoices } = useSpeechSynthesis()
 </script>
 
 <template>
-  <VueSpeechVoiceSelect v-model="selectedVoice" />
+  <VueSpeechVoiceSelect
+    v-model="selectedVoice"
+    :voices="voices"
+    :loading="isLoadingVoices"
+  />
   <button @click="speak('Testing voice!')">Test</button>
 </template>
 ```
@@ -29,13 +31,16 @@ const { speak, selectedVoice } = useSpeechSynthesis()
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `modelValue` | `VoiceInfo \| null` | `null` | The currently selected voice |
+| `voices` | `readonly VoiceInfo[]` | — | **Required.** Voice list from `useSpeechSynthesis().voices` |
+| `modelValue` | `VoiceInfo \| undefined` | `undefined` | The currently selected voice (`v-model`) |
+| `disabled` | `boolean` | `false` | Disable the select element |
+| `loading` | `boolean` | `false` | Show a "Loading voices…" placeholder while voices are being fetched |
 
 ## Emits
 
 | Event | Payload | Description |
 |---|---|---|
-| `update:modelValue` | `VoiceInfo \| null` | Standard `v-model` update event |
+| `update:modelValue` | `VoiceInfo \| undefined` | Standard `v-model` update event |
 
 ## Voice Grouping
 
@@ -62,16 +67,20 @@ import { ref } from 'vue'
 import { VueSpeechVoiceSelect, useSpeechSynthesis } from 'vue-text-to-speech'
 
 const { speak, voices } = useSpeechSynthesis()
-const selected = ref(null)
+const selected = ref<VoiceInfo | undefined>(undefined)
 
-function onSelect(voice) {
+function onSelect(voice: VoiceInfo | undefined) {
   selected.value = voice
   speak(`Now using ${voice?.name ?? 'default voice'}`)
 }
 </script>
 
 <template>
-  <VueSpeechVoiceSelect :model-value="selected" @update:model-value="onSelect" />
+  <VueSpeechVoiceSelect
+    :voices="voices"
+    :model-value="selected"
+    @update:model-value="onSelect"
+  />
 </template>
 ```
 
@@ -79,11 +88,14 @@ function onSelect(voice) {
 
 ```ts
 interface VoiceInfo {
+  /** Unique identifier used as the option value */
+  id: string
   name: string
   lang: string
-  voiceURI: string
+  /** Locale-aware display label, e.g. "Google US English" */
+  label: string
+  /** True when this is the browser/service default voice */
   default: boolean
-  localService: boolean
 }
 ```
 

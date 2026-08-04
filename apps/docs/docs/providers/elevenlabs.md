@@ -12,7 +12,7 @@ createApp(App)
   .use(VueSpeech, {
     provider: 'elevenlabs',
     apiKey: import.meta.env.VITE_ELEVEN_KEY,
-    voiceId: '21m00Tcm4TlvDq8ikWAM',   // Rachel (default)
+  voiceId: '21m00Tcm4TlvDq8ikWAM',   // Rachel
     modelId: 'eleven_multilingual_v2',
   })
   .mount('#app')
@@ -40,8 +40,8 @@ interface ElevenLabsConfig {
 |---|---|---|---|
 | `apiKey` | `string` | — | ElevenLabs API key |
 | `baseURL` | `string` | `https://api.elevenlabs.io` | Override for proxy |
-| `voiceId` | `string` | `'21m00Tcm4TlvDq8ikWAM'` | Voice ID (Rachel) |
-| `modelId` | `string` | `'eleven_monolingual_v1'` | Model to use |
+| `voiceId` | `string` | `'EXAVITQu4vr4xnSDxMaL'` | Voice ID |
+| `modelId` | `string` | `'eleven_multilingual_v2'` | Model to use |
 | `stability` | `number` | `0.5` | Voice consistency, 0–1 |
 | `similarityBoost` | `number` | `0.75` | Voice clarity, 0–1 |
 

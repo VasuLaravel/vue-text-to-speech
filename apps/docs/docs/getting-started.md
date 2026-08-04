@@ -65,6 +65,16 @@ import { VueSpeechPlayer, VueSpeechRecorder } from 'vue-text-to-speech'
 </template>
 ```
 
+For rapid prototyping you can register all three components globally via the plugin option:
+
+```ts
+createApp(App)
+  .use(VueSpeech, { provider: 'web', components: true })
+  .mount('#app')
+```
+
+This registers `VueSpeechPlayer`, `VueSpeechRecorder`, and `VueSpeechVoiceSelect` globally so you don’t need per-file imports. For production builds prefer individual imports — they are tree-shakeable.
+
 Components use CSS custom properties for theming — no UI framework required. See [Component Reference](/components/vue-speech-player).
 
 ## AI Providers
@@ -121,10 +131,43 @@ import type {
   UseSpeechSynthesisReturn,
   UseSpeechRecognitionReturn,
   VoiceInfo,
+  SpeakOptions,
   SpeechError,
+  SpeechErrorCode,
   ProviderConfig,
+  TTSProvider,
 } from 'vue-text-to-speech'
 ```
+
+## Advanced Usage
+
+### Factory Functions
+
+For cases where you cannot use `app.use()` (e.g. Nuxt plugins, custom Vue apps), you can create a provider manually:
+
+```ts
+import { createVueSpeech, createWebSpeechProvider } from 'vue-text-to-speech'
+
+// Async — supports all four providers (tree-shakes AI providers when unused)
+const provider = await createVueSpeech({ provider: 'openai', apiKey: '...' })
+
+// Sync — Web Speech only, zero overhead
+const webProvider = createWebSpeechProvider()
+```
+
+### Providing a Provider Manually
+
+Use `SPEECH_PROVIDER_KEY` to inject a provider into a component subtree without the full plugin:
+
+```ts
+import { provide } from 'vue'
+import { SPEECH_PROVIDER_KEY, createWebSpeechProvider } from 'vue-text-to-speech'
+
+// In a parent component or app setup
+provide(SPEECH_PROVIDER_KEY, createWebSpeechProvider())
+```
+
+All composables (`useSpeechSynthesis`, `useVoiceQueue`, `useStreamingTTS`) will automatically pick up the provided instance.
 
 ## Browser Support
 

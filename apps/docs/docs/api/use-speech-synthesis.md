@@ -34,7 +34,7 @@ const {
 
 <template>
   <select v-model="selectedVoice">
-    <option v-for="v in voices" :key="v.voiceURI" :value="v">{{ v.name }}</option>
+    <option v-for="v in voices" :key="v.id" :value="v">{{ v.label }}</option>
   </select>
   <input v-model.number="rate" type="range" min="0.1" max="10" step="0.1" />
   <button @click="speak('Hello world')">Speak</button>
@@ -44,46 +44,63 @@ const {
 </template>
 ```
 
+## Parameters
+
+```ts
+interface UseSpeechSynthesisOptions {
+  /** Override the injected provider for this composable instance only */
+  provider?: TTSProvider
+  /** Initial speech rate (0.1–10, default 1) */
+  rate?: number
+  /** Initial pitch (0–2, default 1) */
+  pitch?: number
+  /** Initial volume (0–1, default 1) */
+  volume?: number
+}
+
+function useSpeechSynthesis(
+  options?: UseSpeechSynthesisOptions
+): UseSpeechSynthesisReturn
+```
+
+All options are optional. Provider configuration is normally provided globally via `app.use(VueSpeech, config)`; use `provider` only when you need to override it for a specific component instance.
+
 ## Return Value
 
 ```ts
 interface UseSpeechSynthesisReturn {
+  /** Whether the provider is available in this environment */
+  isSupported: Readonly<Ref<boolean>>
   /** Whether speech is currently playing */
   isSpeaking: Readonly<Ref<boolean>>
   /** Whether speech is currently paused */
   isPaused: Readonly<Ref<boolean>>
   /** Available voices from the active provider */
-  voices: Readonly<Ref<VoiceInfo[]>>
-  /** True while voices are being loaded (Web Speech only) */
+  voices: Readonly<Ref<readonly VoiceInfo[]>>
+  /** True while voices are being fetched */
   isLoadingVoices: Readonly<Ref<boolean>>
   /** Currently selected voice */
-  selectedVoice: Ref<VoiceInfo | null>
-  /** Speech rate (Web Speech only). Applied on next speak() call. */
+  selectedVoice: Ref<VoiceInfo | undefined>
+  /** Speech rate — changes apply to the next speak() call */
   rate: Ref<number>
-  /** Speech pitch (Web Speech only). Applied on next speak() call. */
+  /** Pitch — changes apply to the next speak() call */
   pitch: Ref<number>
-  /** Volume 0–1 */
+  /** Volume 0–1 — changes apply to the next speak() call */
   volume: Ref<number>
-  /** Last error, or null */
+  /** Most recent error, cleared on next speak() */
   error: Readonly<Ref<SpeechError | null>>
-  /** Whether TTS is supported in this browser/environment */
-  isSupported: Readonly<Ref<boolean>>
-  /** Speak the given text */
-  speak(text: string): Promise<void>
-  /** Stop playback */
+  /** Speak text using current selectedVoice, rate, pitch, volume */
+  speak(text: string, overrides?: Partial<SpeakOptions>): Promise<void>
+  /** Stop the current utterance immediately */
   stop(): void
-  /** Pause playback (Web Speech only) */
+  /** Pause playback (Web Speech only; no-op for AI providers) */
   pause(): void
-  /** Resume playback (Web Speech only) */
+  /** Resume playback (Web Speech only; no-op for AI providers) */
   resume(): void
-  /** Manually reload available voices */
-  loadVoices(): void
+  /** Reload the voice list */
+  loadVoices(): Promise<void>
 }
 ```
-
-## Parameters
-
-`useSpeechSynthesis()` takes no parameters. Configuration is provided globally via `app.use(VueSpeech, config)`.
 
 ## Behavior Notes
 
@@ -99,15 +116,39 @@ interface UseSpeechSynthesisReturn {
 
 ```ts
 interface VoiceInfo {
+  /** Unique identifier (used as the option value) */
+  id: string
   name: string
   lang: string
-  voiceURI: string
+  /** Locale-aware display label, e.g. "Google US English" */
+  label: string
+  /** True when this is the browser/service default voice */
   default: boolean
-  localService: boolean
 }
 
+interface SpeakOptions {
+  text: string
+  voice?: VoiceInfo
+  /** Speech rate 0.1–10 (1 = normal) */
+  rate?: number
+  /** Pitch 0–2 (1 = normal). Ignored by AI providers */
+  pitch?: number
+  /** Volume 0–1 (1 = full) */
+  volume?: number
+}
+
+type SpeechErrorCode =
+  | 'NOT_SUPPORTED'
+  | 'PERMISSION_DENIED'
+  | 'NETWORK'
+  | 'API_ERROR'
+  | 'RATE_LIMIT'
+  | 'AUDIO_PLAYBACK'
+  | 'CANCELLED'
+  | 'UNKNOWN'
+
 interface SpeechError {
-  code: 'NOT_SUPPORTED' | 'SYNTHESIS_FAILED' | 'API_ERROR' | 'RATE_LIMIT' | 'NETWORK_ERROR' | 'ABORTED'
+  code: SpeechErrorCode
   message: string
   cause?: unknown
 }

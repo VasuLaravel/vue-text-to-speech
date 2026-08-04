@@ -14,7 +14,7 @@ import { useVoiceQueue } from 'vue-text-to-speech'
 <script setup lang="ts">
 import { useVoiceQueue } from 'vue-text-to-speech'
 
-const { enqueue, clear, queue, currentItem, isPlaying } = useVoiceQueue()
+const { enqueue, clear, skip, queue, currentItem, isPlaying } = useVoiceQueue()
 
 function addItems() {
   enqueue('First sentence.')
@@ -33,15 +33,36 @@ function addItems() {
 </template>
 ```
 
+## Parameters
+
+```ts
+interface UseVoiceQueueOptions {
+  /** Override the injected provider for this queue instance */
+  provider?: TTSProvider
+}
+
+function useVoiceQueue(options?: UseVoiceQueueOptions): UseVoiceQueueReturn
+```
+
 ## Return Value
 
 ```ts
 interface UseVoiceQueueReturn {
   /** Add a text item to the end of the queue */
   enqueue(text: string): void
-  /** Clear queue and stop current playback */
+  /**
+   * Manually pop the next item from the queue without speaking it.
+   * Returns the item, or undefined if the queue is empty.
+   */
+  dequeue(): string | undefined
+  /** Stop the current utterance and discard all pending items */
   clear(): void
-  /** All pending items (not yet started) */
+  /**
+   * Stop the current utterance immediately.
+   * The queue auto-advances to the next item via the provider's onEnd hook.
+   */
+  skip(): void
+  /** Items waiting to be spoken (does not include the currently-speaking item) */
   queue: Readonly<Ref<readonly string[]>>
   /** The item currently being spoken */
   currentItem: Readonly<Ref<string | null>>

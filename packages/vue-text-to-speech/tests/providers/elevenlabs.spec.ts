@@ -92,7 +92,7 @@ describe('ElevenLabsProvider', () => {
     expect(body.voice_settings.similarity_boost).toBe(0.9)
   })
 
-  it('respects baseURL override', async () => {
+  it('respects https baseURL override', async () => {
     const fetchMock = mockFetchOk()
     vi.stubGlobal('fetch', fetchMock)
 
@@ -101,6 +101,22 @@ describe('ElevenLabsProvider', () => {
 
     const [url] = fetchMock.mock.calls[0] as [string]
     expect(url).toMatch(/^https:\/\/proxy\.local/)
+  })
+
+  it('respects relative-path baseURL (e.g. /elevenlabs-proxy)', async () => {
+    const fetchMock = mockFetchOk()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const p = new ElevenLabsProvider({ provider: 'elevenlabs', apiKey: 'key', baseURL: '/elevenlabs-proxy' })
+    await p.speak({ text: 'hi' })
+
+    const [url] = fetchMock.mock.calls[0] as [string]
+    expect(url).toMatch(/^\/elevenlabs-proxy\/v1\/text-to-speech\//)
+  })
+
+  it('throws if baseURL uses plain http:// (non-localhost)', () => {
+    expect(() => new ElevenLabsProvider({ provider: 'elevenlabs', apiKey: 'key', baseURL: 'http://external.api.com' }))
+      .toThrow('HTTPS or be a relative path')
   })
 
   it('throws RATE_LIMIT on 429', async () => {

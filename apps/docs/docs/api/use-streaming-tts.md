@@ -31,7 +31,16 @@ async function speak() {
 
 ## Parameters
 
-`useStreamingTTS()` takes no parameters. It uses the provider installed via `app.use(VueSpeech, config)`.
+```ts
+interface UseStreamingTTSOptions {
+  /** Override the injected provider for this composable instance */
+  provider?: TTSProvider
+}
+
+function useStreamingTTS(options?: UseStreamingTTSOptions): UseStreamingTTSReturn
+```
+
+All options are optional. Provider configuration is normally provided globally via `app.use(VueSpeech, config)`.
 
 ## Return Value
 

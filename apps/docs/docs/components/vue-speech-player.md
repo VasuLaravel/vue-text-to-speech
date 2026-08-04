@@ -32,6 +32,10 @@ import { VueSpeechPlayer } from 'vue-text-to-speech'
 |---|---|---|---|
 | `text` | `string` | — | **Required.** The text to speak |
 | `autoSpeak` | `boolean` | `false` | Start speaking automatically when the component mounts |
+| `showVoiceSelect` | `boolean` | `true` | Show the voice selector row |
+| `showRate` | `boolean` | `true` | Show the Rate slider |
+| `showPitch` | `boolean` | `true` | Show the Pitch slider |
+| `showVolume` | `boolean` | `true` | Show the Volume slider |
 
 ## Emits
 

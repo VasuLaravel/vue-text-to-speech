@@ -36,6 +36,7 @@ export default defineConfig({
           { text: 'useSpeechRecognition', link: '/api/use-speech-recognition' },
           { text: 'useStreamingTTS', link: '/api/use-streaming-tts' },
           { text: 'useVoiceQueue', link: '/api/use-voice-queue' },
+          { text: 'Utilities', link: '/api/utilities' },
         ],
       },
       {

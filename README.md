@@ -19,7 +19,7 @@ Vue 3 text-to-speech plugin with composables, drop-in components and multi-provi
 - 🧩 **Drop-in components** — `VueSpeechPlayer`, `VueSpeechRecorder`, `VueSpeechVoiceSelect`
 - 🔒 **Security-first** — `baseURL` override on all AI providers for server-side proxying
 - 📘 **TypeScript** — full declarations shipped, no `@types/*` needed
-- 🧪 **189 tests** — Vitest + @vue/test-utils, SSR-safe
+- 🧪 **207 tests** — Vitest + @vue/test-utils, SSR-safe
 
 ## Installation
 
@@ -70,7 +70,7 @@ createApp(App).use(VueSpeech, {
 createApp(App).use(VueSpeech, {
   provider: 'elevenlabs',
   apiKey: import.meta.env.VITE_ELEVEN_KEY,
-  voiceId: '21m00Tcm4TlvDq8ikWAM',
+  voiceId: 'EXAVITQu4vr4xnSDxMaL',   // default voice; find IDs at elevenlabs.io/voice-library
 }).mount('#app')
 
 // Azure Cognitive Services
@@ -96,6 +96,17 @@ const { pipeStream, isStreaming, stop } = useStreamingTTS()
 await pipeStream(myOpenAIStream())
 ```
 
+## Speech Recognition (STT)
+
+```ts
+import { useSpeechRecognition } from 'vue-text-to-speech'
+
+const { start, stop, isListening, transcript, finalTranscript } =
+  useSpeechRecognition({ lang: 'en-US', continuous: true })
+```
+
+Always uses the browser's `SpeechRecognition` API regardless of the TTS provider configured.
+
 ## Drop-in Components
 
 ```vue
@@ -104,6 +115,17 @@ await pipeStream(myOpenAIStream())
 
 <!-- Mic button with live transcript -->
 <VueSpeechRecorder @final-transcript="onTranscript" />
+
+<!-- Standalone voice selector (pair with useSpeechSynthesis) -->
+<VueSpeechVoiceSelect v-model="selectedVoice" :voices="voices" :loading="isLoadingVoices" />
+```
+
+Register all three components globally in one go:
+
+```ts
+createApp(App)
+  .use(VueSpeech, { provider: 'web', components: true })
+  .mount('#app')
 ```
 
 ## Documentation
