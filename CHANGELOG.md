@@ -6,6 +6,35 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ---
 
+## [2.0.4] — 2026-08-04
+
+### Added
+- **`VueSpeechPlayer` visibility props** — `showVoiceSelect`, `showRate`, `showPitch`, `showVolume` (all `boolean`, default `true`) let callers hide individual UI sections without replacing slots
+- **`VueSpeechVoiceSelect` new props** — `voices: readonly VoiceInfo[]` (now required, passed from `useSpeechSynthesis`), `disabled?: boolean`, `loading?: boolean` (shows "Loading voices…" placeholder while voices are being fetched)
+- **`useVoiceQueue` — `skip()` and `dequeue()`** — `skip()` stops the current utterance and triggers auto-advance to the next item; `dequeue()` manually pops the next item without speaking it
+- **`useSpeechSynthesis` options parameter** — accepts `UseSpeechSynthesisOptions { provider?, rate?, pitch?, volume? }` so a component can override the injected provider or set initial playback values
+- **`useSpeechSynthesis` — `speak()` overrides** — second argument `overrides?: Partial<SpeakOptions>` allows per-call voice/rate/pitch/volume without mutating the reactive refs
+- **`useStreamingTTS` options parameter** — accepts `UseStreamingTTSOptions { provider? }` to override the injected provider per composable instance
+- **Plugin `components` option** — `VueSpeechOptions.components?: boolean`; when `true`, registers all three UI components globally (opt-in, default `false`)
+- **`createWebSpeechProvider()`** — synchronous factory exported from the public API; returns a `WebSpeechTTSProvider` without the async `createVueSpeech()` path
+- **Utility exports** — `extractCompleteSentences(buffer)` and `splitSentences(text)` are now public API for consumers building custom streaming pipelines
+- **`SPEECH_PROVIDER_KEY`** — injection key exported for advanced usage (`provide`/`inject` without the full plugin)
+- **`SpeechErrorCode`** exported as a standalone type alongside `SpeechError`
+- **`WebSpeechSTTOptions`** exported as a public type
+- 12 new tests (207 total, up from 195)
+
+### Changed
+- **`VoiceInfo` shape** — `voiceURI: string` and `localService: boolean` replaced by `id: string` (unique identifier) and `label: string` (locale-aware display name via `Intl.DisplayNames`). **Breaking** for code that reads `voice.voiceURI` or `voice.localService`
+- **`SpeechError.code`** — enum is now `'NOT_SUPPORTED' | 'PERMISSION_DENIED' | 'NETWORK' | 'API_ERROR' | 'RATE_LIMIT' | 'AUDIO_PLAYBACK' | 'CANCELLED' | 'UNKNOWN'`; removed `'SYNTHESIS_FAILED'`, `'NETWORK_ERROR'`, `'ABORTED'`
+- **`useSpeechSynthesis` — `loadVoices()`** — return type changed from `void` to `Promise<void>`
+- **`useSpeechSynthesis` — `selectedVoice`** — type changed from `Ref<VoiceInfo | null>` to `Ref<VoiceInfo | undefined>`
+- **`ElevenLabsProvider` defaults** — default `voiceId` changed to `'EXAVITQu4vr4xnSDxMaL'`; default `modelId` changed from `'eleven_monolingual_v1'` to `'eleven_multilingual_v2'`
+- **`VueSpeechVoiceSelect` — `voices` prop is now required** — pass `useSpeechSynthesis().voices` directly; the component no longer fetches voices internally
+
+### Fixed
+- `VueSpeechVoiceSelect` now identifies the selected voice by `voice.id` instead of the deprecated `voiceURI`, fixing selection state after a voice list reload
+
+
 ## [2.0.3] — 2026-07-27
 
 ### Fixed
