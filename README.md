@@ -9,6 +9,17 @@ Vue 3 text-to-speech plugin with composables, drop-in components and multi-provi
 
 **[📖 Documentation](https://vue-text-to-speech-docs.vercel.app)** · **[🛝 Live Playground](https://vue-text-to-speech-playground.vercel.app)** · **[📦 NPM](https://www.npmjs.com/package/vue-text-to-speech)**
 
+<div align="center">
+  <a href="https://youtu.be/lcBE4AGz6EI" target="_blank" rel="noopener noreferrer">
+    <img
+      src="https://img.youtube.com/vi/lcBE4AGz6EI/maxresdefault.jpg"
+      alt="vue-text-to-speech playground demo"
+      width="720"
+    />
+  </a>
+  <p><sub>▶&nbsp;&nbsp;Watch the full playground walkthrough on YouTube</sub></p>
+</div>
+
 ---
 
 ## Features
