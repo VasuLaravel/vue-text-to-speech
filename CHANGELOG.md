@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ---
 
+## [2.0.5] — 2026-08-07
+
+### Documentation
+- **README — playground video** — added a clickable YouTube thumbnail to both the root and package READMEs linking to the full playground walkthrough ([▶ youtu.be/lcBE4AGz6EI](https://youtu.be/lcBE4AGz6EI))
+- **Docs site aligned with codebase** — all API pages updated to match the current implementation: corrected `VoiceInfo` type (`id`, `label` replacing `voiceURI`/`localService`), `SpeechError.code` enum, `useSpeechSynthesis` options parameter, `speak()` overrides signature, `loadVoices()` async return, `useVoiceQueue` `skip()`/`dequeue()` methods, `VueSpeechVoiceSelect` required `voices` prop, `VueSpeechPlayer` visibility props, ElevenLabs provider defaults
+- **New docs page** — `api/utilities` documents the public `extractCompleteSentences()` and `splitSentences()` exports
+- **README updates** — corrected test count to 207, fixed ElevenLabs default `voiceId`, added `VueSpeechVoiceSelect` and `useSpeechRecognition` usage examples, documented `components: true` global registration option
+
 ## [2.0.4] — 2026-08-04
 
 ### Added
