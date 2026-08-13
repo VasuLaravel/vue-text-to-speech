@@ -1,4 +1,26 @@
 ﻿import { defineConfig } from 'vitepress'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+function countTests(dir: string): number {
+  let n = 0
+  function walk(d: string): void {
+    for (const name of readdirSync(d)) {
+      const full = join(d, name)
+      if (statSync(full).isDirectory()) { walk(full); continue }
+      if (!/\.spec\.ts$/.test(name)) continue
+      const src = readFileSync(full, 'utf-8')
+      n += (src.match(/^\s*(?:it|test)\s*[.(]/gm) ?? []).length
+    }
+  }
+  walk(dir)
+  return n
+}
+
+const TEST_COUNT = countTests(
+  fileURLToPath(new URL('../../../../packages/vue-text-to-speech/tests', import.meta.url))
+)
 
 export default defineConfig({
   title: 'vue-text-to-speech',
@@ -70,5 +92,13 @@ export default defineConfig({
       pattern: 'https://github.com/VasuLaravel/vue-text-to-speech/edit/main/apps/docs/docs/:path',
       text: 'Edit this page on GitHub',
     },
+  },
+
+  transformPageData(pageData) {
+    if (pageData.relativePath !== 'index.md') return
+    const features = pageData.frontmatter.features as Array<{ icon?: string; title: string; details: string }> | undefined
+    if (!features) return
+    const i = features.findIndex(f => /\d+\s*[Tt]ests?/.test(f.title))
+    if (i !== -1) features[i] = { ...features[i], title: `${TEST_COUNT} Tests` }
   },
 })

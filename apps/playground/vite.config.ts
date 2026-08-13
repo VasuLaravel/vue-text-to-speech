@@ -2,6 +2,28 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { quasar, transformAssetUrls } from '@quasar/vite-plugin'
 import { fileURLToPath, URL } from 'node:url'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
+import pkg from '../../packages/vue-text-to-speech/package.json'
+
+function countTests(dir: string): number {
+  let n = 0
+  function walk(d: string): void {
+    for (const name of readdirSync(d)) {
+      const full = join(d, name)
+      if (statSync(full).isDirectory()) { walk(full); continue }
+      if (!/\.spec\.ts$/.test(name)) continue
+      const src = readFileSync(full, 'utf-8')
+      n += (src.match(/^\s*(?:it|test)\s*[.(]/gm) ?? []).length
+    }
+  }
+  walk(dir)
+  return n
+}
+
+const TEST_COUNT = countTests(
+  fileURLToPath(new URL('../../packages/vue-text-to-speech/tests', import.meta.url))
+)
 import * as https from 'node:https'
 import type { Plugin } from 'vite'
 
@@ -66,6 +88,10 @@ export default defineConfig({
     quasar({ sassVariables: 'src/quasar-variables.sass' }),
     elevenLabsProxyPlugin(),
   ],
+  define: {
+    __VTS_VERSION__: JSON.stringify(pkg.version),
+    __VTS_TEST_COUNT__: TEST_COUNT,
+  },
   resolve: {
     alias: {
       // Always resolve the library from source so playground picks up

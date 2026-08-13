@@ -105,7 +105,7 @@ const features = [
 
     <!-- Status chips (T1.5) -->
     <div class="overview__chips" role="list" aria-label="Library status">
-      <span class="overview__chip" role="listitem">✓ 192 tests passing</span>
+      <span class="overview__chip" role="listitem">✓ {{ __VTS_TEST_COUNT__ }} tests passing</span>
       <span class="overview__chip" role="listitem">✓ SSR-safe</span>
       <span class="overview__chip" role="listitem">✓ TypeScript</span>
       <span class="overview__chip" role="listitem">✓ MIT license</span>

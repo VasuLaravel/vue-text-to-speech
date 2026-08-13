@@ -70,7 +70,7 @@ if (typeof document !== 'undefined') {
       <div class="pg-header__logo" aria-label="Vue Text to Speech Playground">
         <span class="pg-header__logo-icon" aria-hidden="true">◈</span>
         <span class="pg-header__logo-text">vue-text-to-speech</span>
-        <span class="pg-header__version-chip">v2.0.3</span>
+        <span class="pg-header__version-chip">v{{ __VTS_VERSION__ }}</span>
       </div>
 
       <!-- Tab bar (scrollable on mobile) -->

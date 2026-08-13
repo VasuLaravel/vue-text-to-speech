@@ -6,6 +6,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ---
 
+## [2.0.6] — 2026-08-13
+
+### Documentation
+- **README — repositioned** — tagline updated to *"The unified speech layer for Vue 3 — TTS, STT and AI streaming voice through one composable API"* across both root and package READMEs
+- **README — provider architecture diagram** — new `## Provider Architecture` section with ASCII diagram showing the abstraction layer over all 4 providers
+- **README — capability matrix** — new `## Capabilities` table listing 12 verified capabilities (all ✅ including SSR safe)
+- **README — LLM streaming** — enhanced `## LLM Streaming` section with token → sentence detection → queue → audio flow diagram; noted compatibility with any `AsyncIterable<string>` source
+- **README — "Why vue-text-to-speech?"** — new section with Without vs With code comparison illustrating the abstraction value
+- **README — "Built for"** — new use-cases table covering AI assistants, accessibility, education, enterprise, and rapid prototyping
+- **README — security section** — expanded from an inline warning into a full `## Security` section with the proxy pattern diagram and `baseURL` example
+- **README — star CTA** — added subtle contributor star request before the License section
+- **LICENSE** — added root-level `LICENSE` file (MIT, Copyright © 2024–2026 kunchamvasu); fixes the license badge link that previously 404'd
+
+### Playground
+- **Dynamic version chip** — `AppHeader.vue` now reads the version from `packages/vue-text-to-speech/package.json` at build time via Vite `define` (`__VTS_VERSION__`); the header chip always reflects the current release without manual edits
+- **Dynamic test count** — `OverviewTab.vue` test count chip now reads the live test count from the test suite at build time via Vite `define` (`__VTS_TEST_COUNT__`); corrected stale count (was `192`, now accurate `207`)
+
+### Docs
+- **Dynamic test count** — VitePress `config.ts` now counts tests at build time and patches the `index.md` hero feature card via `transformPageData`, keeping the displayed count accurate without manual edits (was `189`)
+
 ## [2.0.5] — 2026-08-07
 
 ### Documentation

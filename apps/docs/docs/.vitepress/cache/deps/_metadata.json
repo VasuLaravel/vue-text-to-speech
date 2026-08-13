@@ -1,49 +1,49 @@
 {
-  "hash": "d1922ab4",
+  "hash": "2e0aa542",
   "configHash": "3ddb2313",
-  "lockfileHash": "534359fb",
-  "browserHash": "9bcb5f6e",
+  "lockfileHash": "52f36cb1",
+  "browserHash": "0ceb3b67",
   "optimized": {
     "vue": {
       "src": "../../../../../../node_modules/.pnpm/vue@3.5.39_typescript@5.9.3/node_modules/vue/dist/vue.runtime.esm-bundler.js",
       "file": "vue.js",
-      "fileHash": "3e4dab06",
+      "fileHash": "cace07d4",
       "needsInterop": false
     },
     "vitepress > @vue/devtools-api": {
       "src": "../../../../../../node_modules/.pnpm/@vue+devtools-api@7.7.10/node_modules/@vue/devtools-api/dist/index.js",
       "file": "vitepress___@vue_devtools-api.js",
-      "fileHash": "5b27fe0c",
+      "fileHash": "11a8683d",
       "needsInterop": false
     },
     "vitepress > @vueuse/core": {
       "src": "../../../../../../node_modules/.pnpm/@vueuse+core@12.8.2_typescript@5.9.3/node_modules/@vueuse/core/index.mjs",
       "file": "vitepress___@vueuse_core.js",
-      "fileHash": "895de703",
+      "fileHash": "c9941092",
       "needsInterop": false
     },
     "vitepress > @vueuse/integrations/useFocusTrap": {
       "src": "../../../../../../node_modules/.pnpm/@vueuse+integrations@12.8.2_e93a2f3752a31cdaf1544453fe94dd44/node_modules/@vueuse/integrations/useFocusTrap.mjs",
       "file": "vitepress___@vueuse_integrations_useFocusTrap.js",
-      "fileHash": "fc597ead",
+      "fileHash": "0f0ae5be",
       "needsInterop": false
     },
     "vitepress > mark.js/src/vanilla.js": {
       "src": "../../../../../../node_modules/.pnpm/mark.js@8.11.1/node_modules/mark.js/src/vanilla.js",
       "file": "vitepress___mark__js_src_vanilla__js.js",
-      "fileHash": "f47cd26a",
+      "fileHash": "23554091",
       "needsInterop": false
     },
     "vitepress > minisearch": {
       "src": "../../../../../../node_modules/.pnpm/minisearch@7.2.0/node_modules/minisearch/dist/es/index.js",
       "file": "vitepress___minisearch.js",
-      "fileHash": "56a62250",
+      "fileHash": "56c2cc7b",
       "needsInterop": false
     },
     "@vercel/analytics": {
       "src": "../../../../../../node_modules/.pnpm/@vercel+analytics@2.0.1_vue@3.5.39_typescript@5.9.3_/node_modules/@vercel/analytics/dist/index.mjs",
       "file": "@vercel_analytics.js",
-      "fileHash": "973798b8",
+      "fileHash": "017845d5",
       "needsInterop": false
     }
   },
